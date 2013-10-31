@@ -21,11 +21,7 @@ package com.genericworkflownodes.knime.workflowexporter.model;
 import java.io.File;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
-
-import org.apache.commons.lang.Validate;
 
 /**
  * 
@@ -34,225 +30,198 @@ import org.apache.commons.lang.Validate;
  */
 public class Job {
 
-	private final int x;
-	private final int y;
-	private final Input[] inputs;
-	private final Output[] outputs;
-	private final Map<String, String> params;
-	private final String id;
-	private final String name;
-	private final String description;
+    private int x;
+    private int y;
+    private final Map<Integer, Input> inputs;
+    private final Map<Integer, Output> outputs;
+    private final Map<String, String> params;
+    private String id;
+    private String name;
+    private String description;
+    private JobType jobType;
+    private boolean ignored = false;
 
-	private Job(final String id, final String name, final String description,
-			final int nInputs, final int nOutputs, final int x, final int y) {
-		this.id = id;
-		this.name = name;
-		this.description = description;
-		this.x = x;
-		this.y = y;
-		this.inputs = new Input[nInputs];
-		this.outputs = new Output[nOutputs];
-		this.params = new TreeMap<String, String>();
-		// init all inputs/outputs
-		for (int i = 0; i < nInputs; i++) {
-			this.inputs[i] = new Input();
-		}
-		for (int i = 0; i < nOutputs; i++) {
-			this.outputs[i] = new Output();
-		}
+    public Job() {
+	this.inputs = new TreeMap<Integer, Input>();
+	this.outputs = new TreeMap<Integer, Output>();
+	this.params = new TreeMap<String, String>();
+    }
+
+    public boolean isIgnored() {
+	return ignored;
+    }
+
+    public void clearInputs() {
+	inputs.clear();
+    }
+
+    public void setIgnored(boolean ignored) {
+	this.ignored = ignored;
+    }
+
+    public int getX() {
+	return x;
+    }
+
+    public void setX(int x) {
+	this.x = x;
+    }
+
+    public int getY() {
+	return y;
+    }
+
+    public void setY(int y) {
+	this.y = y;
+    }
+
+    public Input getInput(final int inputNr) {
+	Input input = inputs.get(inputNr);
+	if (input == null) {
+	    input = new Input();
+	    inputs.put(inputNr, input);
 	}
+	return input;
+    }
 
-	public void setParam(final String name, final String value) {
-		params.put(name, value);
+    public Output getOutput(final int outputNr) {
+	Output output = outputs.get(outputNr);
+	if (output == null) {
+	    output = new Output();
+	    outputs.put(outputNr, output);
 	}
+	return output;
+    }
 
-	public Set<String> getParamNames() {
-		return new TreeSet<String>(params.keySet());
+    public int getNrInputs() {
+	return inputs.size();
+    }
+
+    public int getNrOutputs() {
+	return outputs.size();
+    }
+
+    public Map<String, String> getParams() {
+	return params;
+    }
+
+    public void setParam(final String paramName, final String paramValue) {
+	params.put(paramName, paramValue);
+    }
+
+    public String getId() {
+	return id;
+    }
+
+    public void setId(String id) {
+	this.id = id;
+    }
+
+    public String getName() {
+	return name;
+    }
+
+    public void setName(String name) {
+	this.name = name;
+    }
+
+    public String getDescription() {
+	return description;
+    }
+
+    public void setDescription(String description) {
+	this.description = description;
+    }
+
+    public JobType getJobType() {
+	return jobType;
+    }
+
+    public void setJobType(JobType jobType) {
+	this.jobType = jobType;
+    }
+
+    public String generateCommandLine() {
+	// TODO: fix this... this is just for the proof of concept
+	final StringBuilder builder = new StringBuilder();
+	for (final Input input : inputs.values()) {
+	    if (input.getSource() == null) {
+		// node that has not been connected, no command line needed
+		continue;
+	    }
+	    // use only the last part of the filename
+	    // FIXME: better control of this scenario (ziploopstart/end)
+	    if (input.getName() != null && input.getData() != null) {
+		appendToCommandLine(input.getName(), getFileName(input.getData()), builder);
+	    }
 	}
-
-	public String getParam(final String name) {
-		return params.get(name);
+	for (final Output output : outputs.values()) {
+	    if (output.getDestinations().isEmpty()) {
+		// node has not been connected, don't include it in the command
+		// line
+		continue;
+	    }
+	    // FIXME: better control of this scenario (ziploopstart/end)
+	    if (output.getName() != null && output.getData() != null) {
+		appendToCommandLine(output.getName(), getFileName(output.getData()), builder);
+	    }
 	}
-
-	/**
-	 * @return the x
-	 */
-	public int getX() {
-		return x;
+	for (final Entry<String, String> entry : params.entrySet()) {
+	    appendToCommandLine(entry.getKey(), entry.getValue(), builder);
 	}
+	return builder.toString();
+    }
 
-	/**
-	 * @return the y
-	 */
-	public int getY() {
-		return y;
-	}
+    private String getFileName(final Object data) {
+	final File file = new File(data.toString());
+	return file.getName();
+    }
 
-	public int getNrInputs() {
-		return inputs.length;
-	}
-
-	public Input getInput(final int index) {
-		Validate.isTrue(index > -1 && index < inputs.length, "Invalid index",
-				index);
-		return inputs[index];
-	}
-
-	public void setInput(final Input input, final int index) {
-		inputs[index] = input;
-	}
-
-	public int getNrOutputs() {
-		return outputs.length;
-	}
-
-	public Output getOutput(final int index) {
-		Validate.isTrue(index > -1 && index < outputs.length, "Invalid index",
-				index);
-		return outputs[index];
-	}
-
-	public void setOutput(final Output output, final int index) {
-		outputs[index] = output;
-	}
-
-	/**
-	 * @return the description
-	 */
-	public String getDescription() {
-		return description;
-	}
-
-	/**
-	 * @return the id
-	 */
-	public String getId() {
-		return id;
-	}
-
-	/**
-	 * @return the name
-	 */
-	public String getName() {
-		return name;
-	}
-
-	public String generateCommandLine() {
-		// TODO: fix this... this is just for the proof of concept
-		final StringBuilder builder = new StringBuilder();
-		for (final Input input : inputs) {
-			if (input.getSource() == null) {
-				// node that has not been connected, no command line needed
-				continue;
-			}
-			// use only the last part of the filename
-			appendToCommandLine(input.getName(), getFileName(input.getData()),
-					builder);
-		}
-		for (final Output output : outputs) {
-			if (output.getDestinations().isEmpty()) {
-				// node has not been connected, don't include it in the command
-				// line
-				continue;
-			}
-			appendToCommandLine(output.getName(),
-					getFileName(output.getData()), builder);
-		}
-		for (final Entry<String, String> entry : params.entrySet()) {
-			appendToCommandLine(entry.getKey(), entry.getValue(), builder);
-		}
-		return builder.toString();
-	}
-
-	private String getFileName(final Object data) {
-		final File file = new File(data.toString());
-		return file.getName();
-	}
-
-	private void appendToCommandLine(final String name, final String value,
-			final StringBuilder builder) {
-		final String[] splitName = name.split("\\.");
-		builder.append('-');
-		if (splitName.length > 1) {
-			builder.append(splitName[1]);
+    private void appendToCommandLine(final String name, final String value, final StringBuilder builder) {
+	// FIXME: blatantly ignoring parameter "version"
+	// possible fixes: don't include version in the ctd? tag it with an
+	// attribute (e.g., "internal")
+	if (!name.endsWith("version")) {
+	    final String[] splitName = name.split("\\.");
+	    builder.append('-');
+	    if (splitName.length > 1) {
+		// the name of the parameter is, for instance:
+		// FeatureFinderCentroided.1.algorithm.intensity.bins
+		// so we need to get to the "algorithm..." part somehow
+		final int startIndex;
+		if (name.equals(splitName[0])) {
+		    startIndex = 2;
 		} else {
-			builder.append(splitName[0]);
+		    startIndex = 1;
 		}
-		if (value != null) {
-			builder.append(' ').append(value);
+		for (int i = startIndex; i < splitName.length; i++) {
+		    if (i > startIndex) {
+			builder.append(':');
+		    }
+		    builder.append(splitName[i]);
 		}
-		builder.append(' ');
+	    } else {
+		builder.append(splitName[0]);
+	    }
+	    builder.append(' ');
+	    if (value != null) {
+		builder.append(value);
+	    }
 	}
+    }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Object#toString()
-	 */
-	@Override
-	public String toString() {
-		return "Job [id=" + id + ", name=" + name + ", description="
-				+ description + "]";
-	}
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString() {
+	return "Job [id=" + id + ", name=" + name + ", description=" + description + "]";
+    }
 
-	public static class JobBuilder {
-		private int x = 0;
-		private int y = 0;
-		private int nInputs = 0;
-		private int nOutputs = 0;
-		private String id;
-		private String name;
-		private String description;
-		private String commandLine;
-
-		public JobBuilder setX(final int x) {
-			this.x = x;
-			return this;
-		}
-
-		public JobBuilder setY(final int y) {
-			this.y = y;
-			return this;
-		}
-
-		public JobBuilder setNrInputs(final int nInputs) {
-			Validate.isTrue(nInputs > -1, "nInputs cannot be negative", nInputs);
-			this.nInputs = nInputs;
-			return this;
-		}
-
-		public JobBuilder setNrOutputs(final int nOutputs) {
-			Validate.isTrue(nOutputs > -1, "nOutputs cannot be negative",
-					nOutputs);
-			this.nOutputs = nOutputs;
-			return this;
-		}
-
-		public JobBuilder setId(final String id) {
-			Validate.notEmpty(id, "id cannot be empty");
-			this.id = id;
-			return this;
-		}
-
-		public JobBuilder setName(final String name) {
-			Validate.notEmpty(name, "name cannot be empty");
-			this.name = name;
-			return this;
-		}
-
-		public JobBuilder setDescription(final String description) {
-			this.description = description;
-			return this;
-		}
-
-		public JobBuilder setCommandLine(final String commandLine) {
-			this.commandLine = commandLine;
-			return this;
-		}
-
-		public Job build() {
-			return new Job(id, name, description, nInputs, nOutputs, x, y);
-		}
-	}
+    public enum JobType {
+	Generator, Collector, Normal;
+    }
 
 }

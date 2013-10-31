@@ -27,98 +27,107 @@ import org.apache.commons.lang.Validate;
  */
 public class Input {
 
-	private Job source;
-	private int sourcePortNr;
-	private String name;
-	private Object data;
-	private int x;
-	private int y;
+    private Job source;
+    private int sourcePortNr;
+    private String name;
+    private Object data;
+    private int x;
+    private int y;
+    private boolean collector;
 
-	/**
-	 * @return the x
-	 */
-	public int getX() {
-		return x;
-	}
+    public boolean isCollector() {
+	return collector;
+    }
 
-	/**
-	 * @param x
-	 *            the x to set
-	 */
-	public void setX(final int x) {
-		this.x = x;
-	}
+    public void setCollector(boolean collector) {
+	this.collector = collector;
+    }
 
-	/**
-	 * @return the y
-	 */
-	public int getY() {
-		return y;
-	}
+    /**
+     * @return the x
+     */
+    public int getX() {
+	return x;
+    }
 
-	/**
-	 * @param y
-	 *            the y to set
-	 */
-	public void setY(final int y) {
-		this.y = y;
-	}
+    /**
+     * @param x
+     *            the x to set
+     */
+    public void setX(final int x) {
+	this.x = x;
+    }
 
-	/**
-	 * @return the name
-	 */
-	public String getName() {
-		return name;
-	}
+    /**
+     * @return the y
+     */
+    public int getY() {
+	return y;
+    }
 
-	/**
-	 * @param name
-	 *            the name to set
-	 */
-	public void setName(final String name) {
-		this.name = name;
-	}
+    /**
+     * @param y
+     *            the y to set
+     */
+    public void setY(final int y) {
+	this.y = y;
+    }
 
-	/**
-	 * @return the data
-	 */
-	public Object getData() {
-		return data;
-	}
+    /**
+     * @return the name
+     */
+    public String getName() {
+	return name;
+    }
 
-	/**
-	 * @param data
-	 *            the data to set
-	 */
-	public void setData(final Object data) {
-		this.data = data;
-	}
+    /**
+     * @param name
+     *            the name to set
+     */
+    public void setName(final String name) {
+	this.name = name;
+    }
 
-	/**
-	 * @return the source
-	 */
-	public Job getSource() {
-		return source;
-	}
+    /**
+     * @return the data
+     */
+    public Object getData() {
+	return data;
+    }
 
-	public void setSource(final Job source) {
-		Validate.notNull(source, "source cannot be null");
-		this.source = source;
-	}
+    /**
+     * @param data
+     *            the data to set
+     */
+    public void setData(final Object data) {
+	this.data = data;
+    }
 
-	/**
-	 * @return the portNr
-	 */
-	public int getSourcePortNr() {
-		return sourcePortNr;
-	}
+    /**
+     * @return the source
+     */
+    public Job getSource() {
+	return source;
+    }
 
-	/**
-	 * @param sourcePortNr
-	 *            the portNr to set
-	 */
-	public void setSourcePortNr(final int sourcePortNr) {
-		this.sourcePortNr = sourcePortNr;
-	}
+    public void setSource(final Job source) {
+	Validate.notNull(source, "source cannot be null");
+	this.source = source;
+    }
+
+    /**
+     * @return the portNr
+     */
+    public int getSourcePortNr() {
+	return sourcePortNr;
+    }
+
+    /**
+     * @param sourcePortNr
+     *            the portNr to set
+     */
+    public void setSourcePortNr(final int sourcePortNr) {
+	this.sourcePortNr = sourcePortNr;
+    }
 
 }

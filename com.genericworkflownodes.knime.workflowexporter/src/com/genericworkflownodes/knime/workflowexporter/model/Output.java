@@ -19,7 +19,6 @@
 package com.genericworkflownodes.knime.workflowexporter.model;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedList;
 
 import org.apache.commons.lang.Validate;
@@ -31,114 +30,134 @@ import org.apache.commons.lang.Validate;
  */
 public class Output {
 
-	private final Collection<Destination> destinations = new LinkedList<Destination>();
-	private Object data;
-	private String name;
-	private int x;
-	private int y;
+    private final Collection<Destination> destinations = new LinkedList<Destination>();
+    private Object data;
+    private String name;
+    private int x;
+    private int y;
+    private boolean generator;
 
-	/**
-	 * @return the x
-	 */
-	public int getX() {
-		return x;
+    public boolean isGenerator() {
+	return generator;
+    }
+
+    public void setGenerator(boolean generator) {
+	this.generator = generator;
+    }
+
+    /**
+     * @return the x
+     */
+    public int getX() {
+	return x;
+    }
+
+    /**
+     * @param x
+     *            the x to set
+     */
+    public void setX(final int x) {
+	this.x = x;
+    }
+
+    /**
+     * @return the y
+     */
+    public int getY() {
+	return y;
+    }
+
+    /**
+     * @param y
+     *            the y to set
+     */
+    public void setY(final int y) {
+	this.y = y;
+    }
+
+    /**
+     * @return the name
+     */
+    public String getName() {
+	return name;
+    }
+
+    /**
+     * @param name
+     *            the name to set
+     */
+    public void setName(final String name) {
+	this.name = name;
+    }
+
+    /**
+     * @return the data
+     */
+    public Object getData() {
+	return data;
+    }
+
+    /**
+     * @param data
+     *            the data to set
+     */
+    public void setData(final Object data) {
+	this.data = data;
+    }
+
+    /**
+     * 
+     * @param destination
+     *            destination.
+     */
+    public void addDestination(final Destination destination) {
+	destinations.add(destination);
+    }
+
+    /**
+     * @return the destinations
+     */
+    public Collection<Destination> getDestinations() {
+	return destinations;
+    }
+
+    public void clearDestinations() {
+	destinations.clear();
+    }
+
+    public static class Destination {
+	private Job target;
+	private int targetPortNr;
+
+	public Destination(final Job target, final int targetPortNr) {
+	    Validate.notNull(target, "target cannot be null");
+	    Validate.isTrue(targetPortNr > -1, "targetPortNr cannot be negative", targetPortNr);
+	    this.target = target;
+	    this.targetPortNr = targetPortNr;
 	}
 
 	/**
-	 * @param x
-	 *            the x to set
+	 * @return the target
 	 */
-	public void setX(final int x) {
-		this.x = x;
+	public Job getTarget() {
+	    return target;
 	}
 
 	/**
-	 * @return the y
+	 * @return the targetPortNr
 	 */
-	public int getY() {
-		return y;
+	public int getTargetPortNr() {
+	    return targetPortNr;
 	}
 
-	/**
-	 * @param y
-	 *            the y to set
-	 */
-	public void setY(final int y) {
-		this.y = y;
+	public void setTarget(Job target) {
+	    this.target = target;
 	}
 
-	/**
-	 * @return the name
-	 */
-	public String getName() {
-		return name;
+	public void setTargetPortNr(int targetPortNr) {
+	    this.targetPortNr = targetPortNr;
 	}
 
-	/**
-	 * @param name
-	 *            the name to set
-	 */
-	public void setName(final String name) {
-		this.name = name;
-	}
-
-	/**
-	 * @return the data
-	 */
-	public Object getData() {
-		return data;
-	}
-
-	/**
-	 * @param data
-	 *            the data to set
-	 */
-	public void setData(final Object data) {
-		this.data = data;
-	}
-
-	/**
-	 * 
-	 * @param destination
-	 *            destination.
-	 */
-	public void addDestination(final Destination destination) {
-		destinations.add(destination);
-	}
-
-	/**
-	 * @return the destinations
-	 */
-	public Collection<Destination> getDestinations() {
-		return Collections.unmodifiableCollection(destinations);
-	}
-
-	public static class Destination {
-		private final Job target;
-		private final int targetPortNr;
-
-		public Destination(final Job target, final int targetPortNr) {
-			Validate.notNull(target, "target cannot be null");
-			Validate.isTrue(targetPortNr > -1,
-					"targetPortNr cannot be negative", targetPortNr);
-			this.target = target;
-			this.targetPortNr = targetPortNr;
-		}
-
-		/**
-		 * @return the target
-		 */
-		public Job getTarget() {
-			return target;
-		}
-
-		/**
-		 * @return the targetPortNr
-		 */
-		public int getTargetPortNr() {
-			return targetPortNr;
-		}
-
-	}
+    }
 
 }

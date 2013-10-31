@@ -45,72 +45,71 @@ import com.genericworkflownodes.knime.workflowexporter.model.Workflow;
 @SuppressWarnings("restriction")
 public class WorkflowExportWizard extends ExportWizard {
 
-	final WorkflowEditor workflowEditor;
-	final List<KnimeWorkflowExporter> exporters;
-	// pages
-	final WorkflowExportPage workflowExportPage;
+    final WorkflowEditor workflowEditor;
+    final List<KnimeWorkflowExporter> exporters;
+    // pages
+    final WorkflowExportPage workflowExportPage;
 
-	protected static final NodeLogger LOGGER = NodeLogger
-			.getLogger(WorkflowExportWizard.class);
+    protected static final NodeLogger LOGGER = NodeLogger.getLogger(WorkflowExportWizard.class);
 
-	/**
-	 * Constructor.
-	 */
-	public WorkflowExportWizard(final WorkflowEditor workflowEditor,
-			final Collection<KnimeWorkflowExporter> exporters) {
-		Validate.notNull(workflowEditor,
-				"workflowEditor is requied and cannot be null");
-		Validate.notEmpty(exporters,
-				"exporter is required and cannot be null or empty");
-		workflowExportPage = new WorkflowExportPage(exporters);
+    /**
+     * Constructor.
+     */
+    public WorkflowExportWizard(final WorkflowEditor workflowEditor, final Collection<KnimeWorkflowExporter> exporters) {
+	Validate.notNull(workflowEditor, "workflowEditor is required and cannot be null");
+	Validate.notEmpty(exporters, "exporter is required and cannot be null or empty");
+	workflowExportPage = new WorkflowExportPage(exporters);
 
-		setWindowTitle("Export a Workflow to other platforms");
-		setDefaultPageImageDescriptor(ImageRepository
-				.getImageDescriptor(SharedImages.ExportBig));
-		setNeedsProgressMonitor(true);
+	setWindowTitle("Export a Workflow to other platforms");
+	setDefaultPageImageDescriptor(ImageRepository.getImageDescriptor(SharedImages.ExportBig));
+	setNeedsProgressMonitor(true);
 
-		this.exporters = new ArrayList<KnimeWorkflowExporter>(exporters);
-		this.workflowEditor = workflowEditor;
+	this.exporters = new ArrayList<KnimeWorkflowExporter>(exporters);
+	this.workflowEditor = workflowEditor;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.eclipse.ui.internal.dialogs.ExportWizard#addPages()
+     */
+    @Override
+    public void addPages() {
+	super.addPage(workflowExportPage);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.eclipse.ui.internal.dialogs.ExportWizard#performFinish()
+     */
+    @Override
+    public boolean performFinish() {
+	// check if we can finish in the first place
+	if (!canFinish()) {
+	    return false;
+	}
+	// Obtain currently active workflow editor
+	final InternalModelConverter converter = new InternalModelConverter(workflowEditor);
+	try {
+	    final Workflow workflow = converter.convert();
+	    // perform the export
+	    final KnimeWorkflowExporter exporter = workflowExportPage.getSelectedExporter();
+	    final String exportMode = workflowExportPage.getExportMode();
+	    if (exportMode != null) {
+		exporter.setExportMode(exportMode);
+	    }
+	    if (LOGGER.isInfoEnabled()) {
+		LOGGER.info("Exporting using " + exporter + ", mode=" + exportMode + ", file=" + workflowExportPage.getDestinationFile());
+	    }
+	    exporter.export(workflow, new File(workflowExportPage.getDestinationFile()));
+	    return true;
+	} catch (final Exception e) {
+	    LOGGER.error("Could not export workflow", e);
+	    e.printStackTrace();
+	    return false;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.eclipse.ui.internal.dialogs.ExportWizard#addPages()
-	 */
-	@Override
-	public void addPages() {
-		super.addPage(workflowExportPage);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.eclipse.ui.internal.dialogs.ExportWizard#performFinish()
-	 */
-	@Override
-	public boolean performFinish() {
-		// check if we can finish in the first place
-		if (!canFinish()) {
-			return false;
-		}
-		// Obtain currently active workflow editor
-		final InternalModelConverter converter = new InternalModelConverter(
-				workflowEditor);
-		try {
-			final Workflow workflow = converter.convert();
-			// perform the export
-			final KnimeWorkflowExporter exporter = workflowExportPage
-					.getSelectedExporter();
-			exporter.export(workflow,
-					new File(workflowExportPage.getDestinationFile()));
-			return true;
-		} catch (final Exception e) {
-			LOGGER.error("Could not export workflow", e);
-			e.printStackTrace();
-			return false;
-		}
-
-	}
+    }
 
 }

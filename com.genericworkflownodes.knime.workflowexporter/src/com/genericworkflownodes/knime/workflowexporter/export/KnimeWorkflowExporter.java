@@ -19,6 +19,7 @@
 package com.genericworkflownodes.knime.workflowexporter.export;
 
 import java.io.File;
+import java.util.Collection;
 
 import com.genericworkflownodes.knime.workflowexporter.export.ui.KnimeWorkflowExporterInformationProvider;
 import com.genericworkflownodes.knime.workflowexporter.model.Workflow;
@@ -40,6 +41,18 @@ public interface KnimeWorkflowExporter extends
 	 * @param destination
 	 *            The destination file.
 	 */
-	void export(Workflow workflow, File destination) throws Exception;
-
+	void export(final Workflow workflow, final File destination) throws Exception;
+	
+	/**
+	 * Obtain all of the supported export modes.
+	 * @return 	A collection containing the support modes. Can be null or empty if only
+	 * 			one export mode is supported.
+	 */
+	Collection<String> getSupportedExportModes();
+	
+	/**
+	 * Sets the export mode.
+	 * @param exportMode The export mode to set.
+	 */
+	void setExportMode(final String exportMode);
 }
