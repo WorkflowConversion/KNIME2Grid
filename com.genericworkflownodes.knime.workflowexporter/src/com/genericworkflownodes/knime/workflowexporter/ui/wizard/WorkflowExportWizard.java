@@ -24,8 +24,18 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.lang.Validate;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.IExtension;
+import org.eclipse.core.runtime.IExtensionPoint;
+import org.eclipse.core.runtime.IExtensionRegistry;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.ui.internal.dialogs.ExportWizard;
+import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.node.NodeModel;
+import org.knime.core.node.port.PortType;
+import org.knime.core.node.workflow.WorkflowManager;
 import org.knime.workbench.core.util.ImageRepository;
 import org.knime.workbench.core.util.ImageRepository.SharedImages;
 import org.knime.workbench.editor2.WorkflowEditor;
@@ -45,27 +55,27 @@ import com.genericworkflownodes.knime.workflowexporter.model.Workflow;
 @SuppressWarnings("restriction")
 public class WorkflowExportWizard extends ExportWizard {
 
+    protected static final NodeLogger LOGGER = NodeLogger.getLogger(WorkflowExportWizard.class);
+
     final WorkflowEditor workflowEditor;
     final List<KnimeWorkflowExporter> exporters;
     // pages
-    final WorkflowExportPage workflowExportPage;
-
-    protected static final NodeLogger LOGGER = NodeLogger.getLogger(WorkflowExportWizard.class);
+    final WorkflowExportPage workflowExportPage;	
 
     /**
      * Constructor.
      */
     public WorkflowExportWizard(final WorkflowEditor workflowEditor, final Collection<KnimeWorkflowExporter> exporters) {
-	Validate.notNull(workflowEditor, "workflowEditor is required and cannot be null");
-	Validate.notEmpty(exporters, "exporter is required and cannot be null or empty");
-	workflowExportPage = new WorkflowExportPage(exporters);
+        Validate.notNull(workflowEditor, "workflowEditor is required and cannot be null");
+        Validate.notEmpty(exporters, "exporter is required and cannot be null or empty");
+        workflowExportPage = new WorkflowExportPage(exporters);
 
-	setWindowTitle("Export a Workflow to other platforms");
-	setDefaultPageImageDescriptor(ImageRepository.getImageDescriptor(SharedImages.ExportBig));
-	setNeedsProgressMonitor(true);
+        setWindowTitle("Export a Workflow to other platforms");
+        setDefaultPageImageDescriptor(ImageRepository.getImageDescriptor(SharedImages.ExportBig));
+        setNeedsProgressMonitor(true);
 
-	this.exporters = new ArrayList<KnimeWorkflowExporter>(exporters);
-	this.workflowEditor = workflowEditor;
+        this.exporters = new ArrayList<KnimeWorkflowExporter>(exporters);
+        this.workflowEditor = workflowEditor;
     }
 
     /*
@@ -75,7 +85,7 @@ public class WorkflowExportWizard extends ExportWizard {
      */
     @Override
     public void addPages() {
-	super.addPage(workflowExportPage);
+        super.addPage(workflowExportPage);
     }
 
     /*
@@ -85,31 +95,31 @@ public class WorkflowExportWizard extends ExportWizard {
      */
     @Override
     public boolean performFinish() {
-	// check if we can finish in the first place
-	if (!canFinish()) {
-	    return false;
-	}
-	// Obtain currently active workflow editor
-	final InternalModelConverter converter = new InternalModelConverter(workflowEditor);
-	try {
-	    final Workflow workflow = converter.convert();
-	    // perform the export
-	    final KnimeWorkflowExporter exporter = workflowExportPage.getSelectedExporter();
-	    final String exportMode = workflowExportPage.getExportMode();
-	    if (exportMode != null) {
-		exporter.setExportMode(exportMode);
-	    }
-	    if (LOGGER.isInfoEnabled()) {
-		LOGGER.info("Exporting using " + exporter + ", mode=" + exportMode + ", file=" + workflowExportPage.getDestinationFile());
-	    }
-	    exporter.export(workflow, new File(workflowExportPage.getDestinationFile()));
-	    return true;
-	} catch (final Exception e) {
-	    LOGGER.error("Could not export workflow", e);
-	    e.printStackTrace();
-	    return false;
-	}
+        // check if we can finish in the first place
+        if (!canFinish()) {
+            return false;
+        }
 
+        // Obtain currently active workflow editor
+        final InternalModelConverter converter = new InternalModelConverter(workflowEditor);
+        try {
+            final Workflow workflow = converter.convert();
+            // perform the export
+            final KnimeWorkflowExporter exporter = workflowExportPage.getSelectedExporter();
+            final String exportMode = workflowExportPage.getExportMode();
+            if (exportMode != null) {
+                exporter.setExportMode(exportMode);
+            }
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("Exporting using " + exporter + ", mode=" + exportMode + ", file=" + workflowExportPage.getDestinationFile());
+            }
+            exporter.export(workflow, new File(workflowExportPage.getDestinationFile()));
+            return true;
+        } catch (final Exception e) {
+            LOGGER.error("Could not export workflow", e);
+            e.printStackTrace();
+            return false;
+        }
     }
 
 }
