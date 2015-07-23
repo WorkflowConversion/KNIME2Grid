@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.ui.editorActions">
+      <editorContribution
+            id="com.genericworkflownodes.knime.workflowexporter.workflowExportEditorContribution"
+            targetID="org.knime.workbench.editor.WorkflowEditor">
+         <action
+               class="com.workflowconversion.knime2guse.export.ui.action.WorkflowExportActionDelegate"
+               icon="icons/export.png"
+               id="com.genericworkflownodes.knime.workflowexporter.action1"
+               label="Export Workflow"
+               menubarPath="file/ExportWorkflow"
+               style="push"
+               toolbarPath="org.knime.workbench.editor.menu/group1"
+               tooltip="Export Workflow">
+         </action>
+      </editorContribution>
+   </extension>
+   <extension
+         point="org.knime.product.splashExtension">
+      <splashExtension
+            icon="icons/icon.png"
+            icon24="icons/icon24.png"
+            icon32="icons/icon32.png"
+            id="com.genericworkflownodes.knime.workflowexporter.splashExtension">
+      </splashExtension>
+   </extension>
+
+
+</plugin>
