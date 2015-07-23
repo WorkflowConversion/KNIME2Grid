@@ -61,10 +61,10 @@ import org.w3c.dom.NodeList;
 
 import sun.swing.AccumulativeRunnable;
 
-//import com.genericworkflownodes.knime.generic_node.GenericKnimeNodeModel;
-//import com.genericworkflownodes.knime.nodes.flow.listzip.ListZipLoopEndNodeModel;
-//import com.genericworkflownodes.knime.nodes.flow.listzip.ListZipLoopStartNodeModel;
-//import com.genericworkflownodes.knime.nodes.io.importer.MimeFileImporterNodeModel;
+//import com.workflowconversion.knime2guse.generic_node.GenericKnimeNodeModel;
+//import com.workflowconversion.knime2guse.nodes.flow.listzip.ListZipLoopEndNodeModel;
+//import com.workflowconversion.knime2guse.nodes.flow.listzip.ListZipLoopStartNodeModel;
+//import com.workflowconversion.knime2guse.nodes.io.importer.MimeFileImporterNodeModel;
 import com.workflowconversion.knime2guse.exception.NodeFactoryClassNotFoundException;
 import com.workflowconversion.knime2guse.model.Input;
 import com.workflowconversion.knime2guse.model.Job;
@@ -374,10 +374,10 @@ public class InternalModelConverter {
     
     private JobType getJobType(final NativeNodeContainer nativeNodeContainer) {
         Job.JobType jobType = Job.JobType.Normal;
-        if ("com.genericworkflownodes.knime.nodes.flow.listzip.ListZipLoopEndNodeModel".equals(nativeNodeContainer.getNodeModel().getClass().getName())) {
+        if ("com.workflowconversion.knime2guse.nodes.flow.listzip.ListZipLoopEndNodeModel".equals(nativeNodeContainer.getNodeModel().getClass().getName())) {
             jobType = Job.JobType.Collector;
         }
-        if ("com.genericworkflownodes.knime.nodes.flow.listzip.ListZipLoopStartNodeModel".equals(nativeNodeContainer.getNodeModel().getClass().getName())) {
+        if ("com.workflowconversion.knime2guse.nodes.flow.listzip.ListZipLoopStartNodeModel".equals(nativeNodeContainer.getNodeModel().getClass().getName())) {
             jobType = Job.JobType.Generator;
         }
         return jobType;

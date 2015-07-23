@@ -19,7 +19,7 @@ import com.workflowconversion.knime2guse.export.impl.GuseKnimeWorkflowExporter;
 public class KnimeWorkflowExporterActivator extends AbstractUIPlugin {
 
 	// The plug-in ID
-	public static final String PLUGIN_ID = "com.genericworkflownodes.knime.workflowexporter"; //$NON-NLS-1$
+	public static final String PLUGIN_ID = "com.workflowconversion.knime2guse"; //$NON-NLS-1$
 
 	// The shared instance
 	private static KnimeWorkflowExporterActivator plugin;

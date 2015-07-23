@@ -4,12 +4,12 @@
    <extension
          point="org.eclipse.ui.editorActions">
       <editorContribution
-            id="com.genericworkflownodes.knime.workflowexporter.workflowExportEditorContribution"
+            id="com.workflowconversion.knime2guse.workflowExportEditorContribution"
             targetID="org.knime.workbench.editor.WorkflowEditor">
          <action
                class="com.workflowconversion.knime2guse.export.ui.action.WorkflowExportActionDelegate"
                icon="icons/export.png"
-               id="com.genericworkflownodes.knime.workflowexporter.action1"
+               id="com.workflowconversion.knime2guse.action1"
                label="Export Workflow"
                menubarPath="file/ExportWorkflow"
                style="push"
@@ -24,7 +24,7 @@
             icon="icons/icon.png"
             icon24="icons/icon24.png"
             icon32="icons/icon32.png"
-            id="com.genericworkflownodes.knime.workflowexporter.splashExtension">
+            id="com.workflowconversion.knime2guse.splashExtension">
       </splashExtension>
    </extension>
 

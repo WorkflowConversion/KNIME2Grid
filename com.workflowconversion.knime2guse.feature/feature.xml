@@ -5,14 +5,15 @@
       version="0.1.0.qualifier"
       provider-name="University of Tübingen and the WorkflowConversion Team">
 
-   <description url="https://github.com/genericworkflownodes/KnimeWorkflowExporter">
-      This feature provides the com.genericworkflownodes.knime.workflowexporter plugin, which provides capabilities to export KNIME workflows to other formats, such as gUSE / WSPGRADE.
-
-See https://github.com/genericworkflownodes/KnimeWorkflowExporter
+   <description url="https://github.com/WorkflowConversion/KNIME2gUSE">
+      This feature provides the com.workflowconversion.knime2guse plugin,
+which provides capabilities to export KNIME workflows to other
+formats, such as gUSE / WSPGRADE.
+See https://github.com/WorkflowConversion/KNIME2gUSE
    </description>
 
    <copyright>
-      Copyright (c) 2011-2013, Stephan Aiche, Luis de la Garza, Björn Kahlert and Marc Röttig.
+      Copyright (c) 2011-2015, Luis de la Garza.
    </copyright>
 
    <license url="http://www.gnu.org/copyleft/lesser.html">
@@ -188,7 +189,7 @@ Library.
    </requires>
 
    <plugin
-         id="com.genericworkflownodes.knime.workflowexporter"
+         id="com.workflowconversion.knime2guse.workflowexporter"
          download-size="0"
          install-size="0"
          version="0.0.1.qualifier"/>

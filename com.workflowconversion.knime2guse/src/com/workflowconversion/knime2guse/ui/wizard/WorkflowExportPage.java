@@ -58,270 +58,270 @@ import com.workflowconversion.knime2guse.format.ExtensionFilter;
  * @author Luis de la Garza
  */
 public class WorkflowExportPage extends WizardPage {
-    /**
+	/**
 	 * 
 	 */
-    private static final int HORIZONTAL_SPACING = 9;
-    private final ArrayList<KnimeWorkflowExporter> exporters;
-    private int selectedIndex;
-    private String destinationFilePath;
-    private String exportMode;
+	private static final int HORIZONTAL_SPACING = 9;
+	private final ArrayList<KnimeWorkflowExporter> exporters;
+	private int selectedIndex;
+	private String destinationFilePath;
+	private String exportMode;
 
-    /**
-     * @param pageName
-     * @param selection
-     */
-    public WorkflowExportPage(final Collection<KnimeWorkflowExporter> exporters) {
-	super("com.genericworkflownodes.knime.ui.wizard.WorkflowExportPage", "Select the destination format", ImageRepository
-		.getImageDescriptor(SharedImages.ExportBig));
-	Validate.notEmpty(exporters, "exporters cannot be null or empty");
-	this.exporters = new ArrayList<KnimeWorkflowExporter>(exporters);
-	this.selectedIndex = -1;
-    }
-
-    /**
-     * Gets the selected exporter. If no exporter has been selected yet, an
-     * IllegalStateException will be thrown!
-     * 
-     * @return The selected exporter.
-     */
-    public KnimeWorkflowExporter getSelectedExporter() {
-	if (selectedIndex == -1) {
-	    throw new IllegalStateException("No exporter has been selected yet!");
+	/**
+	 * @param pageName
+	 * @param selection
+	 */
+	public WorkflowExportPage(final Collection<KnimeWorkflowExporter> exporters) {
+		super("com.workflowconversion.knime2guse.ui.wizard.WorkflowExportPage", "Select the destination format", ImageRepository
+				.getImageDescriptor(SharedImages.ExportBig));
+		Validate.notEmpty(exporters, "exporters cannot be null or empty");
+		this.exporters = new ArrayList<KnimeWorkflowExporter>(exporters);
+		this.selectedIndex = -1;
 	}
-	return exporters.get(selectedIndex);
-    }
 
-    /**
-     * @return the file to which the workflow will be exported.
-     */
-    public String getDestinationFile() {
-	return destinationFilePath;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.jface.wizard.WizardPage#isPageComplete()
-     */
-    @Override
-    public boolean isPageComplete() {
-	return selectedIndex != -1 && StringUtils.isNotBlank(destinationFilePath);
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.jface.dialogs.IDialogPage#createControl(org.eclipse.swt.widgets
-     * .Composite)
-     */
-    @Override
-    public void createControl(final Composite parent) {
-	final Composite container = new Composite(parent, SWT.NULL);
-	final GridLayout containerLayout = new GridLayout(1, false);
-	container.setLayout(containerLayout);
-	container.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-
-	// ------- format selection
-	final Group selectFormatGroup = new Group(container, SWT.NULL);
-	final GridLayout selectFormatGroupLayout = new GridLayout(2, false);
-	selectFormatGroupLayout.horizontalSpacing = HORIZONTAL_SPACING;
-	selectFormatGroup.setLayout(selectFormatGroupLayout);
-	selectFormatGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-
-	final Label formatLabel = new Label(selectFormatGroup, SWT.HORIZONTAL | SWT.LEFT);
-	formatLabel.setText("Select an export format:");
-	// formatLabel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-
-	final Combo formatCombo = new Combo(selectFormatGroup, SWT.PUSH | SWT.DROP_DOWN);
-
-	formatCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-	for (final DisplayInformationProvider infoProvider : exporters) {
-	    formatCombo.add(infoProvider.getShortDescription());
+	/**
+	 * Gets the selected exporter. If no exporter has been selected yet, an
+	 * IllegalStateException will be thrown!
+	 * 
+	 * @return The selected exporter.
+	 */
+	public KnimeWorkflowExporter getSelectedExporter() {
+		if (selectedIndex == -1) {
+			throw new IllegalStateException("No exporter has been selected yet!");
+		}
+		return exporters.get(selectedIndex);
 	}
-	// ------------------------
 
-	// ------- export mode
-	final Group selectExportModeGroup = new Group(container, SWT.NULL);
-	final GridLayout selectExportModeGroupLayout = new GridLayout(2, false);
-	selectExportModeGroupLayout.horizontalSpacing = HORIZONTAL_SPACING;
-	selectExportModeGroup.setLayout(selectExportModeGroupLayout);
-	selectExportModeGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+	/**
+	 * @return the file to which the workflow will be exported.
+	 */
+	public String getDestinationFile() {
+		return destinationFilePath;
+	}
 
-	final Label exportModeLabel = new Label(selectExportModeGroup, SWT.HORIZONTAL | SWT.LEFT);
-	exportModeLabel.setText("Select an export mode:");
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.eclipse.jface.wizard.WizardPage#isPageComplete()
+	 */
+	@Override
+	public boolean isPageComplete() {
+		return selectedIndex != -1 && StringUtils.isNotBlank(destinationFilePath);
+	}
 
-	final Combo exportModeCombo = new Combo(selectExportModeGroup, SWT.PUSH | SWT.DROP_DOWN);
-	exportModeCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-	// -------------------------
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.eclipse.jface.dialogs.IDialogPage#createControl(org.eclipse.swt.widgets
+	 * .Composite)
+	 */
+	@Override
+	public void createControl(final Composite parent) {
+		final Composite container = new Composite(parent, SWT.NULL);
+		final GridLayout containerLayout = new GridLayout(1, false);
+		container.setLayout(containerLayout);
+		container.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
-	// ------- file destination
-	final Group selectDestinationGroup = new Group(container, SWT.NULL);
-	final GridLayout selectDestinationGroupLayout = new GridLayout(3, false);
-	selectDestinationGroupLayout.horizontalSpacing = HORIZONTAL_SPACING;
-	selectDestinationGroup.setLayout(selectDestinationGroupLayout);
-	selectDestinationGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		// ------- format selection
+		final Group selectFormatGroup = new Group(container, SWT.NULL);
+		final GridLayout selectFormatGroupLayout = new GridLayout(2, false);
+		selectFormatGroupLayout.horizontalSpacing = HORIZONTAL_SPACING;
+		selectFormatGroup.setLayout(selectFormatGroupLayout);
+		selectFormatGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
-	final Label destinationLabel = new Label(selectDestinationGroup, SWT.NULL);
-	destinationLabel.setText("Select an export destination:");
+		final Label formatLabel = new Label(selectFormatGroup, SWT.HORIZONTAL | SWT.LEFT);
+		formatLabel.setText("Select an export format:");
+		// formatLabel.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
-	final Text destinationText = new Text(selectDestinationGroup, SWT.BORDER | SWT.SINGLE);
-	destinationText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		final Combo formatCombo = new Combo(selectFormatGroup, SWT.PUSH | SWT.DROP_DOWN);
 
-	final Button destinationButton = new Button(selectDestinationGroup, SWT.PUSH);
-	destinationButton.setText("Browse...");
-	// ------------------------
+		formatCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		for (final DisplayInformationProvider infoProvider : exporters) {
+			formatCombo.add(infoProvider.getShortDescription());
+		}
+		// ------------------------
 
-	// ---------- format information display
-	final Group infoDisplayGroup = new Group(container, SWT.NULL);
-	final GridLayout infoDisplayGroupLayout = new GridLayout(2, false);
-	infoDisplayGroupLayout.horizontalSpacing = HORIZONTAL_SPACING;
-	infoDisplayGroup.setLayout(infoDisplayGroupLayout);
-	infoDisplayGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		// ------- export mode
+		final Group selectExportModeGroup = new Group(container, SWT.NULL);
+		final GridLayout selectExportModeGroupLayout = new GridLayout(2, false);
+		selectExportModeGroupLayout.horizontalSpacing = HORIZONTAL_SPACING;
+		selectExportModeGroup.setLayout(selectExportModeGroupLayout);
+		selectExportModeGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
-	final Label image = new Label(infoDisplayGroup, SWT.NULL);
-	image.setSize(150, 150);
-	final Label description = new Label(infoDisplayGroup, SWT.NULL);
-	description.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-	// -------------------------------------
+		final Label exportModeLabel = new Label(selectExportModeGroup, SWT.HORIZONTAL | SWT.LEFT);
+		exportModeLabel.setText("Select an export mode:");
 
-	// ------------------- listeners / action handlers
-	// formatCombo.addModifyListener(new ModifyListener() {
-	// @Override
-	// public void modifyText(final ModifyEvent e) {
-	// if (e.getSource() == formatCombo) {
-	// selectedIndex = formatCombo.getSelectionIndex();
-	// if (selectedIndex > -1) {
-	// final KnimeWorkflowExporter selectedExporter =
-	// exporters.get(selectedIndex);
-	// // change the image and the description
-	// final Image scaledPic = ImageDescriptor.createFromImageData(
-	// selectedExporter.getImageDescriptor().getImageData().scaledTo(150,
-	// 150)).createImage();
-	// image.setImage(scaledPic);
-	// description.setText(selectedExporter.getLongDescription());
-	// //
-	// final Collection<String> exportModes =
-	// selectedExporter.getSupportedExportModes();
-	// exportModeCombo.setEnabled(exportModes != null &&
-	// exportModes.isEmpty());
-	// exportModeCombo.removeAll();
-	// for (final String exportMode :
-	// selectedExporter.getSupportedExportModes()) {
-	// exportModeCombo.add(exportMode);
-	// }
-	// }
-	// }
-	// updatePageComplete();
-	// }
-	// });
+		final Combo exportModeCombo = new Combo(selectExportModeGroup, SWT.PUSH | SWT.DROP_DOWN);
+		exportModeCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		// -------------------------
 
-	formatCombo.addModifyListener(new ModifyListener() {
-	    @Override
-	    public void modifyText(final ModifyEvent e) {
-		if (e.getSource() == formatCombo) {
-		    selectedIndex = formatCombo.getSelectionIndex();
-		    if (selectedIndex > -1) {
-			final KnimeWorkflowExporter selectedExporter = exporters.get(selectedIndex);
-			// change the image and the description
-			final Image scaledPic = ImageDescriptor.createFromImageData(
-				selectedExporter.getImageDescriptor().getImageData().scaledTo(150, 150)).createImage();
-			image.setImage(scaledPic);
-			description.setText(selectedExporter.getLongDescription());
-			//
-			final Collection<String> exportModes = selectedExporter.getSupportedExportModes();
-			exportModeCombo.setEnabled(exportModes != null && !exportModes.isEmpty());
-			exportModeCombo.removeAll();
-			for (final String exportMode : selectedExporter.getSupportedExportModes()) {
-			    exportModeCombo.add(exportMode);
+		// ------- file destination
+		final Group selectDestinationGroup = new Group(container, SWT.NULL);
+		final GridLayout selectDestinationGroupLayout = new GridLayout(3, false);
+		selectDestinationGroupLayout.horizontalSpacing = HORIZONTAL_SPACING;
+		selectDestinationGroup.setLayout(selectDestinationGroupLayout);
+		selectDestinationGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+
+		final Label destinationLabel = new Label(selectDestinationGroup, SWT.NULL);
+		destinationLabel.setText("Select an export destination:");
+
+		final Text destinationText = new Text(selectDestinationGroup, SWT.BORDER | SWT.SINGLE);
+		destinationText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+
+		final Button destinationButton = new Button(selectDestinationGroup, SWT.PUSH);
+		destinationButton.setText("Browse...");
+		// ------------------------
+
+		// ---------- format information display
+		final Group infoDisplayGroup = new Group(container, SWT.NULL);
+		final GridLayout infoDisplayGroupLayout = new GridLayout(2, false);
+		infoDisplayGroupLayout.horizontalSpacing = HORIZONTAL_SPACING;
+		infoDisplayGroup.setLayout(infoDisplayGroupLayout);
+		infoDisplayGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+
+		final Label image = new Label(infoDisplayGroup, SWT.NULL);
+		image.setSize(150, 150);
+		final Label description = new Label(infoDisplayGroup, SWT.NULL);
+		description.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		// -------------------------------------
+
+		// ------------------- listeners / action handlers
+		// formatCombo.addModifyListener(new ModifyListener() {
+		// @Override
+		// public void modifyText(final ModifyEvent e) {
+		// if (e.getSource() == formatCombo) {
+		// selectedIndex = formatCombo.getSelectionIndex();
+		// if (selectedIndex > -1) {
+		// final KnimeWorkflowExporter selectedExporter =
+		// exporters.get(selectedIndex);
+		// // change the image and the description
+		// final Image scaledPic = ImageDescriptor.createFromImageData(
+		// selectedExporter.getImageDescriptor().getImageData().scaledTo(150,
+		// 150)).createImage();
+		// image.setImage(scaledPic);
+		// description.setText(selectedExporter.getLongDescription());
+		// //
+		// final Collection<String> exportModes =
+		// selectedExporter.getSupportedExportModes();
+		// exportModeCombo.setEnabled(exportModes != null &&
+		// exportModes.isEmpty());
+		// exportModeCombo.removeAll();
+		// for (final String exportMode :
+		// selectedExporter.getSupportedExportModes()) {
+		// exportModeCombo.add(exportMode);
+		// }
+		// }
+		// }
+		// updatePageComplete();
+		// }
+		// });
+
+		formatCombo.addModifyListener(new ModifyListener() {
+			@Override
+			public void modifyText(final ModifyEvent e) {
+				if (e.getSource() == formatCombo) {
+					selectedIndex = formatCombo.getSelectionIndex();
+					if (selectedIndex > -1) {
+						final KnimeWorkflowExporter selectedExporter = exporters.get(selectedIndex);
+						// change the image and the description
+						final Image scaledPic = ImageDescriptor.createFromImageData(
+								selectedExporter.getImageDescriptor().getImageData().scaledTo(150, 150)).createImage();
+						image.setImage(scaledPic);
+						description.setText(selectedExporter.getLongDescription());
+						//
+						final Collection<String> exportModes = selectedExporter.getSupportedExportModes();
+						exportModeCombo.setEnabled(exportModes != null && !exportModes.isEmpty());
+						exportModeCombo.removeAll();
+						for (final String exportMode : selectedExporter.getSupportedExportModes()) {
+							exportModeCombo.add(exportMode);
+						}
+						if (exportModeCombo.isEnabled()) {
+							exportModeCombo.select(0);
+						} else {
+							exportMode = null;
+						}
+					}
+				}
 			}
-			if (exportModeCombo.isEnabled()) {
-			    exportModeCombo.select(0);
-			} else {
-			    exportMode = null;
+		});
+
+		exportModeCombo.addModifyListener(new ModifyListener() {
+			@Override
+			public void modifyText(final ModifyEvent e) {
+				if (e.getSource() == exportModeCombo) {
+					exportMode = exportModeCombo.getItem(exportModeCombo.getSelectionIndex());
+				}
 			}
-		    }
-		}
-	    }
-	});
+		});
 
-	exportModeCombo.addModifyListener(new ModifyListener() {
-	    @Override
-	    public void modifyText(final ModifyEvent e) {
-		if (e.getSource() == exportModeCombo) {
-		    exportMode = exportModeCombo.getItem(exportModeCombo.getSelectionIndex());
-		}
-	    }
-	});
+		destinationText.addModifyListener(new ModifyListener() {
+			@Override
+			public void modifyText(final ModifyEvent e) {
+				if (e.getSource() == destinationText) {
+					destinationFilePath = destinationText.getText();
+				}
+				updatePageComplete();
+			}
+		});
 
-	destinationText.addModifyListener(new ModifyListener() {
-	    @Override
-	    public void modifyText(final ModifyEvent e) {
-		if (e.getSource() == destinationText) {
-		    destinationFilePath = destinationText.getText();
-		}
-		updatePageComplete();
-	    }
-	});
+		destinationButton.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(final SelectionEvent e) {
+				if (e.getSource() == destinationButton) {
+					final FileDialog fileDialog = new FileDialog(getShell(), SWT.SAVE);
+					fileDialog.setOverwrite(true);
+					final KnimeWorkflowExporter selectedExporter = exporters.get(selectedIndex);
+					final Collection<ExtensionFilter> extensionFilters = selectedExporter.getExtensionFilters();
+					final String[] filterExtensions = new String[extensionFilters.size()];
+					final String[] filterNames = new String[extensionFilters.size()];
+					int i = 0;
+					for (final Iterator<ExtensionFilter> it = extensionFilters.iterator(); it.hasNext(); i++) {
+						final ExtensionFilter current = it.next();
+						filterExtensions[i] = current.getFilter();
+						filterNames[i] = current.getDescription();
+					}
+					fileDialog.setFilterExtensions(filterExtensions);
+					fileDialog.setFilterNames(filterNames);
+					if (extensionFilters.size() > 1) {
+						fileDialog.setFilterIndex(1);
+					}
 
-	destinationButton.addSelectionListener(new SelectionListener() {
-	    @Override
-	    public void widgetSelected(final SelectionEvent e) {
-		if (e.getSource() == destinationButton) {
-		    final FileDialog fileDialog = new FileDialog(getShell(), SWT.SAVE);
-		    fileDialog.setOverwrite(true);
-		    final KnimeWorkflowExporter selectedExporter = exporters.get(selectedIndex);
-		    final Collection<ExtensionFilter> extensionFilters = selectedExporter.getExtensionFilters();
-		    final String[] filterExtensions = new String[extensionFilters.size()];
-		    final String[] filterNames = new String[extensionFilters.size()];
-		    int i = 0;
-		    for (final Iterator<ExtensionFilter> it = extensionFilters.iterator(); it.hasNext(); i++) {
-			final ExtensionFilter current = it.next();
-			filterExtensions[i] = current.getFilter();
-			filterNames[i] = current.getDescription();
-		    }
-		    fileDialog.setFilterExtensions(filterExtensions);
-		    fileDialog.setFilterNames(filterNames);
-		    if (extensionFilters.size() > 1) {
-			fileDialog.setFilterIndex(1);
-		    }
+					fileDialog.setText("Specify the export file.");
 
-		    fileDialog.setText("Specify the export file.");
+					final String filePath = fileDialog.open();
+					if (StringUtils.isNotBlank(filePath)) {
+						destinationFilePath = filePath;
+						destinationText.setText(filePath);
+					}
+				}
+				updatePageComplete();
+			}
 
-		    final String filePath = fileDialog.open();
-		    if (StringUtils.isNotBlank(filePath)) {
-			destinationFilePath = filePath;
-			destinationText.setText(filePath);
-		    }
-		}
-		updatePageComplete();
-	    }
+			@Override
+			public void widgetDefaultSelected(final SelectionEvent e) {
+				widgetSelected(e);
+			}
+		});
+		// -----------------------------------
 
-	    @Override
-	    public void widgetDefaultSelected(final SelectionEvent e) {
-		widgetSelected(e);
-	    }
-	});
-	// -----------------------------------
+		// make a default selection
+		formatCombo.select(0);
 
-	// make a default selection
-	formatCombo.select(0);
+		setControl(container);
+	}
 
-	setControl(container);
-    }
+	private void updatePageComplete() {
+		setPageComplete(selectedIndex > -1 && StringUtils.isNotBlank(destinationFilePath));
+	}
 
-    private void updatePageComplete() {
-	setPageComplete(selectedIndex > -1 && StringUtils.isNotBlank(destinationFilePath));
-    }
-
-    /**
-     * Gets the currently selected export mode, or {@code null} if none has been
-     * selected.
-     * 
-     * @return The export mode.
-     */
-    public String getExportMode() {
-	return exportMode;
-    }
+	/**
+	 * Gets the currently selected export mode, or {@code null} if none has been
+	 * selected.
+	 * 
+	 * @return The export mode.
+	 */
+	public String getExportMode() {
+		return exportMode;
+	}
 }

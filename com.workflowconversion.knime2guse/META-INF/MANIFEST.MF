@@ -4,7 +4,7 @@ Bundle-Name: KNIME2gUSE
 Bundle-SymbolicName: com.workflowconversion.knime2guse;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: com.workflowconversion.knime2guse.KnimeWorkflowExporterActivator
-Bundle-Vendor: Universität Tübingen and the Workflow Conversion team
+Bundle-Vendor: University of Tübingen and the Workflow Conversion team
 Require-Bundle: org.eclipse.core.runtime;bundle-version="3.7.0",
  org.knime.workbench.core;bundle-version="2.10.0",
  org.apache.commons.lang;bundle-version="2.6.0",

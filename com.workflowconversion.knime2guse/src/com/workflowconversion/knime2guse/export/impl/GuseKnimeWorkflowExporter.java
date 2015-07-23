@@ -67,7 +67,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	 * (non-Javadoc)
 	 * 
 	 * @see
-	 * com.genericworkflownodes.knime.export.ui.DisplayInformationProvider#getId
+	 * com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider#getId
 	 * ()
 	 */
 	@Override
@@ -78,7 +78,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.genericworkflownodes.knime.export.ui.DisplayInformationProvider#
+	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider#
 	 * getLongDescription()
 	 */
 	@Override
@@ -89,7 +89,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.genericworkflownodes.knime.export.ui.DisplayInformationProvider#
+	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider#
 	 * getShortDescription()
 	 */
 	@Override
@@ -101,7 +101,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	 * (non-Javadoc)
 	 * 
 	 * @see
-	 * com.genericworkflownodes.knime.export.KnimeWorkflowExporter#export(org
+	 * com.workflowconversion.knime2guse.export.KnimeWorkflowExporter#export(org
 	 * .knime.core.node.workflow.WorkflowManager, java.io.File)
 	 */
 	@Override
@@ -447,7 +447,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.genericworkflownodes.knime.export.ui.DisplayInformationProvider#
+	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider#
 	 * getImageDescriptor()
 	 */
 	@Override
@@ -458,7 +458,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.genericworkflownodes.knime.export.ui.ExtensionFilterProvider#
+	 * @see com.workflowconversion.knime2guse.export.ui.ExtensionFilterProvider#
 	 * getExtensionFilters()
 	 */
 	@Override

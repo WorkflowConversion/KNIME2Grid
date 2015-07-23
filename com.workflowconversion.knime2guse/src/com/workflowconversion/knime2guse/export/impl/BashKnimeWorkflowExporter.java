@@ -37,85 +37,81 @@ import com.workflowconversion.knime2guse.model.Workflow;
  */
 public class BashKnimeWorkflowExporter implements KnimeWorkflowExporter {
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.genericworkflownodes.knime.export.ui.DisplayInformationProvider#getId
-     * ()
-     */
-    @Override
-    public String getId() {
-	return BashKnimeWorkflowExporter.class.getName();
-    }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider#getId()
+	 */
+	@Override
+	public String getId() {
+		return BashKnimeWorkflowExporter.class.getName();
+	}
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.genericworkflownodes.knime.export.ui.DisplayInformationProvider#
-     * getLongDescription()
-     */
-    @Override
-    public String getLongDescription() {
-	return "You can test your workflows outside KNIME using bash scripts.";
-    }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider#getLongDescription()
+	 */
+	@Override
+	public String getLongDescription() {
+		return "You can test your workflows outside KNIME using bash scripts.";
+	}
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.genericworkflownodes.knime.export.ui.DisplayInformationProvider#
-     * getShortDescription()
-     */
-    @Override
-    public String getShortDescription() {
-	return "Bash Script";
-    }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider#getShortDescription()
+	 */
+	@Override
+	public String getShortDescription() {
+		return "Bash Script";
+	}
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.genericworkflownodes.knime.export.ui.DisplayInformationProvider#
-     * getImageDescriptor()
-     */
-    @Override
-    public ImageDescriptor getImageDescriptor() {
-	return KnimeWorkflowExporterActivator.getImageDescriptor("images/exporters/bash.png");
-    }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider#getImageDescriptor()
+	 */
+	@Override
+	public ImageDescriptor getImageDescriptor() {
+		return KnimeWorkflowExporterActivator.getImageDescriptor("images/exporters/bash.png");
+	}
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.genericworkflownodes.knime.export.ui.ExtensionFilterProvider#
-     * getExtensionFilters()
-     */
-    @Override
-    public Collection<ExtensionFilter> getExtensionFilters() {
-	return Arrays.asList(new ExtensionFilter("*.sh", "Bash Script"));
-    }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.workflowconversion.knime2guse.export.ui.ExtensionFilterProvider#
+	 * getExtensionFilters()
+	 */
+	@Override
+	public Collection<ExtensionFilter> getExtensionFilters() {
+		return Arrays.asList(new ExtensionFilter("*.sh", "Bash Script"));
+	}
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.genericworkflownodes.knime.export.KnimeWorkflowExporter#export(com
-     * .genericworkflownodes.knime.model.Workflow, java.io.File)
-     */
-    @Override
-    public void export(final Workflow workflow, final File destination) {
-	// TODO Auto-generated method stub
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.workflowconversion.knime2guse.export.KnimeWorkflowExporter#export(com
+	 * .genericworkflownodes.knime.model.Workflow, java.io.File)
+	 */
+	@Override
+	public void export(final Workflow workflow, final File destination) {
+		// TODO Auto-generated method stub
 
-    }
+	}
 
-    @Override
-    public Collection<String> getSupportedExportModes() {
-	// TODO Auto-generated method stub
-	return Collections.emptyList();
-    }
+	@Override
+	public Collection<String> getSupportedExportModes() {
+		// TODO Auto-generated method stub
+		return Collections.emptyList();
+	}
 
-    @Override
-    public void setExportMode(String exportMode) {
-	// TODO Auto-generated method stub
+	@Override
+	public void setExportMode(String exportMode) {
+		// TODO Auto-generated method stub
 
-    }
+	}
 
 }
