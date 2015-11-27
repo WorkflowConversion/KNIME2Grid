@@ -27,6 +27,21 @@
             id="com.workflowconversion.knime2guse.splashExtension">
       </splashExtension>
    </extension>
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            category="org.knime.workbench.ui.preferences"
+            class="com.workflowconversion.knime2guse.preference.PreferencePage"
+            id="com.workflowconversion.knime2guse.preference.PreferencePage"
+            name="KNIME2gUSE">
+      </page>
+   </extension>
+   <extension
+         point="org.eclipse.equinox.preferences.preferences">
+      <initializer
+            class="com.workflowconversion.knime2guse.preference.PreferenceInitializer">
+      </initializer>
+   </extension>
 
 
 </plugin>

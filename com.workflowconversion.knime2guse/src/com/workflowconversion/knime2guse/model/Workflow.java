@@ -30,6 +30,8 @@ import java.util.LinkedList;
 public class Workflow {
 
 	private final Collection<Job> jobs = new LinkedList<Job>();
+	
+	// some platforms display workflows visually and this information would be needed 
 	private int width;
 	private int height;
 

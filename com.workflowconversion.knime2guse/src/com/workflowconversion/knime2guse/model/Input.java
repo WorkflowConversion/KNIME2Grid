@@ -18,6 +18,8 @@
  */
 package com.workflowconversion.knime2guse.model;
 
+import java.io.File;
+
 import org.apache.commons.lang.Validate;
 
 /**
@@ -27,107 +29,141 @@ import org.apache.commons.lang.Validate;
  */
 public class Input {
 
-    private Job source;
-    private int sourcePortNr;
-    private String name;
-    private Object data;
-    private int x;
-    private int y;
-    private boolean collector;
+	private Job source;
+	private int sourcePortNr;
+	private String name;
+	private String extension;
+	// some input ports are not connected to output ports and they already contain the needed data
+	private File data;
+	private int x;
+	private int y;
+	private boolean collector = false;
+	private boolean ctd = false;
 
-    public boolean isCollector() {
-	return collector;
-    }
+	/**
+	 * @return the extension
+	 */
+	public String getExtension() {
+		return extension;
+	}
 
-    public void setCollector(boolean collector) {
-	this.collector = collector;
-    }
+	/**
+	 * @param extension
+	 *            the extension to set
+	 */
+	public void setExtension(String extension) {
+		this.extension = extension;
+	}
 
-    /**
-     * @return the x
-     */
-    public int getX() {
-	return x;
-    }
+	public boolean isCollector() {
+		return collector;
+	}
 
-    /**
-     * @param x
-     *            the x to set
-     */
-    public void setX(final int x) {
-	this.x = x;
-    }
+	public void setCollector(boolean collector) {
+		this.collector = collector;
+	}
 
-    /**
-     * @return the y
-     */
-    public int getY() {
-	return y;
-    }
+	/**
+	 * @return the x
+	 */
+	public int getX() {
+		return x;
+	}
 
-    /**
-     * @param y
-     *            the y to set
-     */
-    public void setY(final int y) {
-	this.y = y;
-    }
+	/**
+	 * @param x
+	 *            the x to set
+	 */
+	public void setX(final int x) {
+		this.x = x;
+	}
 
-    /**
-     * @return the name
-     */
-    public String getName() {
-	return name;
-    }
+	/**
+	 * @return the y
+	 */
+	public int getY() {
+		return y;
+	}
 
-    /**
-     * @param name
-     *            the name to set
-     */
-    public void setName(final String name) {
-	this.name = name;
-    }
+	/**
+	 * @param y
+	 *            the y to set
+	 */
+	public void setY(final int y) {
+		this.y = y;
+	}
 
-    /**
-     * @return the data
-     */
-    public Object getData() {
-	return data;
-    }
+	/**
+	 * @return the name
+	 */
+	public String getName() {
+		return name;
+	}
 
-    /**
-     * @param data
-     *            the data to set
-     */
-    public void setData(final Object data) {
-	this.data = data;
-    }
+	/**
+	 * @param name
+	 *            the name to set
+	 */
+	public void setName(final String name) {
+		this.name = name;
+	}
 
-    /**
-     * @return the source
-     */
-    public Job getSource() {
-	return source;
-    }
+	/**
+	 * @return the data
+	 */
+	public File getData() {
+		return data;
+	}
 
-    public void setSource(final Job source) {
-	Validate.notNull(source, "source cannot be null");
-	this.source = source;
-    }
+	/**
+	 * @param data
+	 *            the data to set
+	 */
+	public void setData(final File data) {
+		this.data = data;
+	}
 
-    /**
-     * @return the portNr
-     */
-    public int getSourcePortNr() {
-	return sourcePortNr;
-    }
+	/**
+	 * @return the source
+	 */
+	public Job getSource() {
+		return source;
+	}
 
-    /**
-     * @param sourcePortNr
-     *            the portNr to set
-     */
-    public void setSourcePortNr(final int sourcePortNr) {
-	this.sourcePortNr = sourcePortNr;
-    }
+	/**
+	 * @param ctd
+	 *            whether this input is a ctd file.
+	 */
+	public void setCTD(final boolean ctd) {
+		this.ctd = ctd;
+	}
 
+	/**
+	 * @return whether this input is a ctd file.
+	 */
+	public boolean isCTD() {
+		return this.ctd;
+	}
+
+	/**
+	 * Sets the source.
+	 * 
+	 * @param source
+	 *            The source job.
+	 * @param sourcePortNr
+	 *            The port index in the source job.
+	 * @throws {@link NullPointerException} if {@code source} is {@code null}.
+	 */
+	public void setSource(final Job source, final int sourcePortNr) {
+		Validate.notNull(source, "source cannot be null");
+		this.source = source;
+		this.sourcePortNr = sourcePortNr;
+	}
+
+	/**
+	 * @return the portNr
+	 */
+	public int getSourcePortNr() {
+		return sourcePortNr;
+	}
 }

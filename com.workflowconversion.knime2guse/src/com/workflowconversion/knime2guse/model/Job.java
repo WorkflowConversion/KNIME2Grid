@@ -18,210 +18,191 @@
  */
 package com.workflowconversion.knime2guse.model;
 
-import java.io.File;
+import java.util.Collection;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
 
+import com.genericworkflownodes.knime.commandline.CommandLineElement;
+
 /**
+ * This a simple object that contains all information related to a single job. Not all of the fields will be known at
+ * instantiation, so as the conversion advances, different fields will be populated (e.g., fields such as {@link #x} or
+ * {@link #y} depend on the target platform).
  * 
+ * It's worth noting that instances of this class don't <i>know</i> how to generate the command line needed to execute
+ * them, rather, this is set by an external process, due to the fact that the command line depends on the type of Job
+ * (i.e., if this is a GKN job, it'll look different than a KNIME job).
  * 
  * @author Luis de la Garza
  */
 public class Job {
 
-    private int x;
-    private int y;
-    private final Map<Integer, Input> inputs;
-    private final Map<Integer, Output> outputs;
-    private final Map<String, String> params;
-    private String id;
-    private String name;
-    private String description;
-    private JobType jobType;
-    private boolean ignored = false;
+	// coordinates, might not even be used in some formats (i.e., bash)
+	private int x;
+	private int y;
 
-    public Job() {
-	this.inputs = new TreeMap<Integer, Input>();
-	this.outputs = new TreeMap<Integer, Output>();
-	this.params = new TreeMap<String, String>();
-    }
+	private final Map<Integer, Input> inputs;
+	private final Map<Integer, Output> outputs;
+	private final Map<String, String> params;
 
-    public boolean isIgnored() {
-	return ignored;
-    }
+	private String id;
+	private String name;
+	private String description;
+	private JobType jobType;
 
-    public void clearInputs() {
-	inputs.clear();
-    }
+	// it makes sense to split this information in two parts... the executableName
+	// quite likely stays constant across platforms, whereas the path changes
+	private String executableName;
+	private String executablePath;
 
-    public void setIgnored(boolean ignored) {
-	this.ignored = ignored;
-    }
+	// the command line to execute this job... in general, to execute this job one would append
+	// path, executableName and commandLine
+	private Collection<CommandLineElement> commandLine;
 
-    public int getX() {
-	return x;
-    }
+	private boolean ignored = false;
 
-    public void setX(int x) {
-	this.x = x;
-    }
-
-    public int getY() {
-	return y;
-    }
-
-    public void setY(int y) {
-	this.y = y;
-    }
-
-    public Input getInput(final int inputNr) {
-	Input input = inputs.get(inputNr);
-	if (input == null) {
-	    input = new Input();
-	    inputs.put(inputNr, input);
+	public Job() {
+		this.inputs = new TreeMap<Integer, Input>();
+		this.outputs = new TreeMap<Integer, Output>();
+		this.params = new TreeMap<String, String>();
 	}
-	return input;
-    }
 
-    public Output getOutput(final int outputNr) {
-	Output output = outputs.get(outputNr);
-	if (output == null) {
-	    output = new Output();
-	    outputs.put(outputNr, output);
+	public boolean isIgnored() {
+		return ignored;
 	}
-	return output;
-    }
 
-    public int getNrInputs() {
-	return inputs.size();
-    }
-
-    public int getNrOutputs() {
-	return outputs.size();
-    }
-
-    public Map<String, String> getParams() {
-	return params;
-    }
-
-    public void setParam(final String paramName, final String paramValue) {
-	params.put(paramName, paramValue);
-    }
-
-    public String getId() {
-	return id;
-    }
-
-    public void setId(String id) {
-	this.id = id;
-    }
-
-    public String getName() {
-	return name;
-    }
-
-    public void setName(String name) {
-	this.name = name;
-    }
-
-    public String getDescription() {
-	return description;
-    }
-
-    public void setDescription(String description) {
-	this.description = description;
-    }
-
-    public JobType getJobType() {
-	return jobType;
-    }
-
-    public void setJobType(JobType jobType) {
-	this.jobType = jobType;
-    }
-
-    public String generateCommandLine() {
-	// TODO: fix this... this is just for the proof of concept
-	final StringBuilder builder = new StringBuilder();
-	for (final Input input : inputs.values()) {
-	    if (input.getSource() == null) {
-		// node that has not been connected, no command line needed
-		continue;
-	    }
-	    // use only the last part of the filename
-	    // FIXME: better control of this scenario (ziploopstart/end)
-	    if (input.getName() != null && input.getData() != null) {
-		appendToCommandLine(input.getName(), getFileName(input.getData()), builder);
-	    }
+	public void clearInputs() {
+		inputs.clear();
 	}
-	for (final Output output : outputs.values()) {
-	    if (output.getDestinations().isEmpty()) {
-		// node has not been connected, don't include it in the command
-		// line
-		continue;
-	    }
-	    // FIXME: better control of this scenario (ziploopstart/end)
-	    if (output.getName() != null && output.getData() != null) {
-		appendToCommandLine(output.getName(), getFileName(output.getData()), builder);
-	    }
-	}
-	for (final Entry<String, String> entry : params.entrySet()) {
-	    appendToCommandLine(entry.getKey(), entry.getValue(), builder);
-	}
-	return builder.toString();
-    }
 
-    private String getFileName(final Object data) {
-	final File file = new File(data.toString());
-	return file.getName();
-    }
+	public void setIgnored(boolean ignored) {
+		this.ignored = ignored;
+	}
 
-    private void appendToCommandLine(final String name, final String value, final StringBuilder builder) {
-	// FIXME: blatantly ignoring parameter "version"
-	// possible fixes: don't include version in the ctd? tag it with an
-	// attribute (e.g., "internal")
-	if (!name.endsWith("version")) {
-	    final String[] splitName = name.split("\\.");
-	    builder.append('-');
-	    if (splitName.length > 1) {
-		// the name of the parameter is, for instance:
-		// FeatureFinderCentroided.1.algorithm.intensity.bins
-		// so we need to get to the "algorithm..." part somehow
-		final int startIndex;
-		if (name.equals(splitName[0])) {
-		    startIndex = 2;
-		} else {
-		    startIndex = 1;
+	public int getX() {
+		return x;
+	}
+
+	public void setX(int x) {
+		this.x = x;
+	}
+
+	public int getY() {
+		return y;
+	}
+
+	public void setY(int y) {
+		this.y = y;
+	}
+
+	public void addInput(final Input input) {
+		inputs.put(inputs.size(), input);
+	}
+
+	public Input getInput(final int inputNr) {
+		Input input = inputs.get(inputNr);
+		if (input == null) {
+			throw new NullPointerException("Input number " + inputNr + " does not exist.");
 		}
-		for (int i = startIndex; i < splitName.length; i++) {
-		    if (i > startIndex) {
-			builder.append(':');
-		    }
-		    builder.append(splitName[i]);
-		}
-	    } else {
-		builder.append(splitName[0]);
-	    }
-	    builder.append(' ');
-	    if (value != null) {
-		builder.append(value);
-	    }
+		return input;
 	}
-    }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#toString()
-     */
-    @Override
-    public String toString() {
-	return "Job [id=" + id + ", name=" + name + ", description=" + description + "]";
-    }
+	public void addOutput(final Output output) {
+		outputs.put(outputs.size(), output);
+	}
 
-    public enum JobType {
-	Generator, Collector, Normal;
-    }
+	public Output getOutput(final int outputNr) {
+		Output output = outputs.get(outputNr);
+		if (output == null) {
+			throw new NullPointerException("Output number " + outputNr + " does not exist.");
+		}
+		return output;
+	}
+
+	public int getNrInputs() {
+		return inputs.size();
+	}
+
+	public int getNrOutputs() {
+		return outputs.size();
+	}
+
+	public Map<String, String> getParams() {
+		return params;
+	}
+
+	public void setParam(final String paramName, final String paramValue) {
+		params.put(paramName, paramValue);
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(final String id) {
+		this.id = id;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(final String name) {
+		this.name = name;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(final String description) {
+		this.description = description;
+	}
+
+	public JobType getJobType() {
+		return jobType;
+	}
+
+	public void setJobType(final JobType jobType) {
+		this.jobType = jobType;
+	}
+
+	public String getExecutableName() {
+		return executableName;
+	}
+
+	public void setExecutableName(final String executableName) {
+		this.executableName = executableName;
+	}
+
+	public String getExecutablePath() {
+		return executablePath;
+	}
+
+	public void setExecutablePath(final String executablePath) {
+		this.executablePath = executablePath;
+	}
+
+	public Collection<CommandLineElement> getCommandLine() {
+		return commandLine;
+	}
+
+	public void setCommandLine(final Collection<CommandLineElement> commandLine) {
+		this.commandLine = commandLine;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "Job [id=" + id + ", name=" + name + ", description=" + description + "]";
+	}
+
+	public enum JobType {
+		Generator, Collector, Normal;
+	}
 
 }

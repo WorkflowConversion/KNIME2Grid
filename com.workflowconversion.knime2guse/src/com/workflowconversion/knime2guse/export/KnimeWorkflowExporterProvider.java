@@ -18,12 +18,13 @@
  */
 package com.workflowconversion.knime2guse.export;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.lang.Validate;
+
+import com.workflowconversion.knime2guse.export.handler.NodeContainerConverter;
 
 /**
  * 
@@ -34,7 +35,8 @@ public class KnimeWorkflowExporterProvider {
 
 	private static KnimeWorkflowExporterProvider INSTANCE;
 
-	private final Collection<KnimeWorkflowExporter> availableExporters;
+	private final Collection<KnimeWorkflowExporter> workflowExporters;
+	private final Collection<NodeContainerConverter> nodeConverters;
 	private final static Lock LOCK = new ReentrantLock();
 
 	/**
@@ -43,15 +45,13 @@ public class KnimeWorkflowExporterProvider {
 	 * @param availableExporters
 	 *            The available exporters.
 	 */
-	public static void initInstance(
-			final Collection<KnimeWorkflowExporter> availableExporters) {
+	public static void initInstance(final Collection<KnimeWorkflowExporter> availableExporters, final Collection<NodeContainerConverter> handlers) {
 		LOCK.lock();
 		try {
 			if (INSTANCE != null) {
-				throw new IllegalStateException(
-						"INSTANCE has already been initialized.");
+				throw new IllegalStateException("INSTANCE has already been initialized.");
 			}
-			INSTANCE = new KnimeWorkflowExporterProvider(availableExporters);
+			INSTANCE = new KnimeWorkflowExporterProvider(availableExporters, handlers);
 		} finally {
 			LOCK.unlock();
 		}
@@ -66,8 +66,7 @@ public class KnimeWorkflowExporterProvider {
 		LOCK.lock();
 		try {
 			if (INSTANCE == null) {
-				throw new IllegalStateException(
-						"initInstance() should be called before calling getInstance()");
+				throw new IllegalStateException("initInstance() should be called before calling getInstance()");
 			}
 			return INSTANCE;
 		} finally {
@@ -75,19 +74,20 @@ public class KnimeWorkflowExporterProvider {
 		}
 	}
 
-	private KnimeWorkflowExporterProvider(
-			final Collection<KnimeWorkflowExporter> availableExporters) {
-		Validate.notEmpty(availableExporters,
-				"availableExporters cannot be null or empty");
-		this.availableExporters = new ArrayList<KnimeWorkflowExporter>(
-				availableExporters);
+	private KnimeWorkflowExporterProvider(final Collection<KnimeWorkflowExporter> availableExporters, final Collection<NodeContainerConverter> handlers) {
+		Validate.notEmpty(availableExporters, "availableExporters cannot be null or empty");
+		this.workflowExporters = availableExporters;
+		this.nodeConverters = handlers;
 	}
 
 	/**
 	 * @return The available exporters
 	 */
-	public Collection<KnimeWorkflowExporter> getAvailableExporters() {
-		return new ArrayList<KnimeWorkflowExporter>(availableExporters);
+	public Collection<KnimeWorkflowExporter> getWorkflowExporters() {
+		return this.workflowExporters;
 	}
 
+	public Collection<NodeContainerConverter> getNodeConverters() {
+		return this.nodeConverters;
+	}
 }

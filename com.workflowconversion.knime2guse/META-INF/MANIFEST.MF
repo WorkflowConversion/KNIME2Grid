@@ -5,14 +5,21 @@ Bundle-SymbolicName: com.workflowconversion.knime2guse;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: com.workflowconversion.knime2guse.KnimeWorkflowExporterActivator
 Bundle-Vendor: University of Tübingen and the Workflow Conversion team
-Require-Bundle: org.eclipse.core.runtime;bundle-version="3.7.0",
- org.knime.workbench.core;bundle-version="2.10.0",
+Require-Bundle: org.eclipse.core.runtime;bundle-version="3.11.0",
+ org.knime.workbench.core;bundle-version="3.0.1",
  org.apache.commons.lang;bundle-version="2.6.0",
- org.knime.workbench.editor;bundle-version="2.10.0",
+ org.knime.workbench.editor;bundle-version="3.0.1",
  org.eclipse.core.resources;bundle-version="3.7.101",
- org.knime.workbench.ui;bundle-version="2.10.0",
- org.knime.workbench.repository;bundle-version="2.10.0",
- org.knime.product,
- org.knime.base;bundle-version="2.11.2"
+ org.knime.workbench.ui;bundle-version="3.0.1",
+ org.knime.workbench.repository;bundle-version="3.0.1",
+ org.knime.product;bundle-version="3.0.1",
+ org.knime.base;bundle-version="3.0.1",
+ org.knime.workbench.explorer.view;bundle-version="7.1.1",
+ org.knime.core.data.uritype;bundle-version="3.0.0",
+ com.genericworkflownodes.knime;bundle-version="0.8.100",
+ com.genericworkflownodes.knime.config;bundle-version="0.8.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
+Import-Package: com.genericworkflownodes.knime.commandline,
+ com.genericworkflownodes.knime.commandline.impl,
+ com.genericworkflownodes.knime.nodes.io.importer

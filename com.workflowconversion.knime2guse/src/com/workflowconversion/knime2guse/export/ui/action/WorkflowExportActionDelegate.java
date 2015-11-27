@@ -31,7 +31,6 @@ import org.knime.workbench.editor2.WorkflowEditor;
 import com.workflowconversion.knime2guse.export.KnimeWorkflowExporterProvider;
 import com.workflowconversion.knime2guse.ui.wizard.WorkflowExportWizard;
 
-
 /**
  * 
  * 
@@ -51,26 +50,21 @@ public class WorkflowExportActionDelegate implements IEditorActionDelegate {
 	@Override
 	public void run(final IAction action) {
 		if (workflowEditor == null) {
-			throw new IllegalStateException(
-					"There is no workflowEditor set! Cannot continue.");
+			throw new IllegalStateException("There is no workflowEditor set! Cannot continue.");
 		}
-		final IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow();
+		final IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		if (workbenchWindow == null) {
 			// not sure what should happen here
 			return;
 		}
 
-		final WorkflowExportWizard wizard = new WorkflowExportWizard(
-				workflowEditor, KnimeWorkflowExporterProvider.getInstance()
-						.getAvailableExporters());
+		final WorkflowExportWizard wizard = new WorkflowExportWizard(workflowEditor, KnimeWorkflowExporterProvider.getInstance().getWorkflowExporters(),
+				KnimeWorkflowExporterProvider.getInstance().getNodeConverters());
 
 		final Shell parent = workbenchWindow.getShell();
 		final WizardDialog dialog = new WizardDialog(parent, wizard);
 		dialog.create();
-		dialog.getShell().setSize(
-				Math.max(SIZING_WIZARD_WIDTH, dialog.getShell().getSize().x),
-				SIZING_WIZARD_HEIGHT);
+		dialog.getShell().setSize(Math.max(SIZING_WIZARD_WIDTH, dialog.getShell().getSize().x), SIZING_WIZARD_HEIGHT);
 		dialog.open();
 
 	}
@@ -78,31 +72,24 @@ public class WorkflowExportActionDelegate implements IEditorActionDelegate {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * org.eclipse.ui.IActionDelegate#selectionChanged(org.eclipse.jface.action
-	 * .IAction, org.eclipse.jface.viewers.ISelection)
+	 * @see org.eclipse.ui.IActionDelegate#selectionChanged(org.eclipse.jface.action .IAction, org.eclipse.jface.viewers.ISelection)
 	 */
 	@Override
-	public void selectionChanged(final IAction action,
-			final ISelection selection) {
+	public void selectionChanged(final IAction action, final ISelection selection) {
 	}
 
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * org.eclipse.ui.IEditorActionDelegate#setActiveEditor(org.eclipse.jface
-	 * .action.IAction, org.eclipse.ui.IEditorPart)
+	 * @see org.eclipse.ui.IEditorActionDelegate#setActiveEditor(org.eclipse.jface .action.IAction, org.eclipse.ui.IEditorPart)
 	 */
 	@Override
-	public void setActiveEditor(final IAction action,
-			final IEditorPart targetEditor) {
+	public void setActiveEditor(final IAction action, final IEditorPart targetEditor) {
 		if (targetEditor == null) {
 			return;
 		}
 		if (!(targetEditor instanceof WorkflowEditor)) {
-			throw new IllegalArgumentException(
-					"This action expects a WorkflowEditor");
+			throw new IllegalArgumentException("This action expects a WorkflowEditor");
 		}
 		workflowEditor = (WorkflowEditor) targetEditor;
 	}

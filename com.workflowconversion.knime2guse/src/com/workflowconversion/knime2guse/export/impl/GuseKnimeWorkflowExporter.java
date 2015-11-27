@@ -39,9 +39,6 @@ import javax.xml.transform.stream.StreamSource;
 import org.apache.commons.lang.Validate;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.knime.core.node.NodeLogger;
-import org.knime.core.node.workflow.WorkflowContext;
-import org.knime.core.node.workflow.WorkflowCreationHelper;
-import org.knime.core.node.workflow.WorkflowManager;
 
 import com.workflowconversion.knime2guse.KnimeWorkflowExporterActivator;
 import com.workflowconversion.knime2guse.export.KnimeWorkflowExporter;
@@ -49,8 +46,8 @@ import com.workflowconversion.knime2guse.format.ExtensionFilter;
 import com.workflowconversion.knime2guse.model.Input;
 import com.workflowconversion.knime2guse.model.Job;
 import com.workflowconversion.knime2guse.model.Output;
-import com.workflowconversion.knime2guse.model.Workflow;
 import com.workflowconversion.knime2guse.model.Output.Destination;
+import com.workflowconversion.knime2guse.model.Workflow;
 
 /**
  * Exports to gUse/WS-PGRADE grids.
@@ -66,9 +63,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider#getId
-	 * ()
+	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider #getId ()
 	 */
 	@Override
 	public String getId() {
@@ -78,8 +73,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider#
-	 * getLongDescription()
+	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider# getLongDescription()
 	 */
 	@Override
 	public String getLongDescription() {
@@ -89,8 +83,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider#
-	 * getShortDescription()
+	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider# getShortDescription()
 	 */
 	@Override
 	public String getShortDescription() {
@@ -100,8 +93,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * com.workflowconversion.knime2guse.export.KnimeWorkflowExporter#export(org
+	 * @see com.workflowconversion.knime2guse.export.KnimeWorkflowExporter#export(org
 	 * .knime.core.node.workflow.WorkflowManager, java.io.File)
 	 */
 	@Override
@@ -329,12 +321,15 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 				final Output generatorOutput = job.getOutput(0);
 				// connect the source of the collector input to the target of
 				// the generator output
-				final Destination sourceDestination = generatorInput.getSource().getOutput(0).getDestinations().iterator().next();
+				final Destination sourceDestination = generatorInput.getSource().getOutput(0).getDestinations()
+						.iterator().next();
 				sourceDestination.setTarget(generatorOutput.getDestinations().iterator().next().getTarget());
 				sourceDestination.setTargetPortNr(0);
 				// remove the connection between the target job and the
 				// generator output
-				generatorOutput.getDestinations().iterator().next().getTarget().getInput(0).setSource(generatorInput.getSource());
+				// FIXME: this shitty line of code right here doesn't compile
+				// generatorOutput.getDestinations().iterator().next().getTarget().getInput(0)
+				// .setSource(generatorInput.getSource());
 				// flag the port from the source as collector port
 				generatorInput.getSource().getOutput(0).setGenerator(true);
 				// "remove" the job by ignoring it
@@ -346,12 +341,15 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 				final Output collectorOutput = job.getOutput(0);
 				// connect the source of the input to the target of the
 				// collector output
-				final Destination sourceDestination = collectorInput.getSource().getOutput(0).getDestinations().iterator().next();
+				final Destination sourceDestination = collectorInput.getSource().getOutput(0).getDestinations()
+						.iterator().next();
 				sourceDestination.setTarget(collectorOutput.getDestinations().iterator().next().getTarget());
 				sourceDestination.setTargetPortNr(0);
 				// remove the connection between the target job and the
 				// collector output
-				collectorOutput.getDestinations().iterator().next().getTarget().getInput(0).setSource(collectorInput.getSource());
+				// FIXME: this shit line of code right here doesn't compile
+				// collectorOutput.getDestinations().iterator().next().getTarget().getInput(0)
+				// .setSource(collectorInput.getSource());
 				// flag the port as collector
 				collectorOutput.getDestinations().iterator().next().getTarget().getInput(0).setCollector(true);
 				// "remove" the job by ignoring it
@@ -365,7 +363,8 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 					sourceJob.getOutput(i).clearDestinations();
 					final Destination dest = new Destination(targetJob, i);
 					sourceJob.getOutput(i).addDestination(dest);
-					targetJob.getInput(i).setSource(sourceJob);
+					// FIXME: this shitty line of code right here doesn't compile
+					// targetJob.getInput(i).setSource(sourceJob);
 				}
 				// ignore this job
 				job.setIgnored(true);
@@ -447,8 +446,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider#
-	 * getImageDescriptor()
+	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider# getImageDescriptor()
 	 */
 	@Override
 	public ImageDescriptor getImageDescriptor() {
@@ -458,8 +456,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.workflowconversion.knime2guse.export.ui.ExtensionFilterProvider#
-	 * getExtensionFilters()
+	 * @see com.workflowconversion.knime2guse.export.ui.ExtensionFilterProvider# getExtensionFilters()
 	 */
 	@Override
 	public Collection<ExtensionFilter> getExtensionFilters() {

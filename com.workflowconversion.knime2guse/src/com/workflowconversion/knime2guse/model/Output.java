@@ -30,134 +30,150 @@ import org.apache.commons.lang.Validate;
  */
 public class Output {
 
-    private final Collection<Destination> destinations = new LinkedList<Destination>();
-    private Object data;
-    private String name;
-    private int x;
-    private int y;
-    private boolean generator;
+	private final Collection<Destination> destinations = new LinkedList<Destination>();
+	private Object data;
+	private String name;
+	private String extension;
+	private int x;
+	private int y;
+	private boolean generator;
 
-    public boolean isGenerator() {
-	return generator;
-    }
-
-    public void setGenerator(boolean generator) {
-	this.generator = generator;
-    }
-
-    /**
-     * @return the x
-     */
-    public int getX() {
-	return x;
-    }
-
-    /**
-     * @param x
-     *            the x to set
-     */
-    public void setX(final int x) {
-	this.x = x;
-    }
-
-    /**
-     * @return the y
-     */
-    public int getY() {
-	return y;
-    }
-
-    /**
-     * @param y
-     *            the y to set
-     */
-    public void setY(final int y) {
-	this.y = y;
-    }
-
-    /**
-     * @return the name
-     */
-    public String getName() {
-	return name;
-    }
-
-    /**
-     * @param name
-     *            the name to set
-     */
-    public void setName(final String name) {
-	this.name = name;
-    }
-
-    /**
-     * @return the data
-     */
-    public Object getData() {
-	return data;
-    }
-
-    /**
-     * @param data
-     *            the data to set
-     */
-    public void setData(final Object data) {
-	this.data = data;
-    }
-
-    /**
-     * 
-     * @param destination
-     *            destination.
-     */
-    public void addDestination(final Destination destination) {
-	destinations.add(destination);
-    }
-
-    /**
-     * @return the destinations
-     */
-    public Collection<Destination> getDestinations() {
-	return destinations;
-    }
-
-    public void clearDestinations() {
-	destinations.clear();
-    }
-
-    public static class Destination {
-	private Job target;
-	private int targetPortNr;
-
-	public Destination(final Job target, final int targetPortNr) {
-	    Validate.notNull(target, "target cannot be null");
-	    Validate.isTrue(targetPortNr > -1, "targetPortNr cannot be negative", targetPortNr);
-	    this.target = target;
-	    this.targetPortNr = targetPortNr;
+	/**
+	 * @return the extension
+	 */
+	public String getExtension() {
+		return extension;
 	}
 
 	/**
-	 * @return the target
+	 * @param extension
+	 *            the extension to set
 	 */
-	public Job getTarget() {
-	    return target;
+	public void setExtension(String extension) {
+		this.extension = extension;
+	}
+
+	public boolean isGenerator() {
+		return generator;
+	}
+
+	public void setGenerator(boolean generator) {
+		this.generator = generator;
 	}
 
 	/**
-	 * @return the targetPortNr
+	 * @return the x
 	 */
-	public int getTargetPortNr() {
-	    return targetPortNr;
+	public int getX() {
+		return x;
 	}
 
-	public void setTarget(Job target) {
-	    this.target = target;
+	/**
+	 * @param x
+	 *            the x to set
+	 */
+	public void setX(final int x) {
+		this.x = x;
 	}
 
-	public void setTargetPortNr(int targetPortNr) {
-	    this.targetPortNr = targetPortNr;
+	/**
+	 * @return the y
+	 */
+	public int getY() {
+		return y;
 	}
 
-    }
+	/**
+	 * @param y
+	 *            the y to set
+	 */
+	public void setY(final int y) {
+		this.y = y;
+	}
+
+	/**
+	 * @return the name
+	 */
+	public String getName() {
+		return name;
+	}
+
+	/**
+	 * @param name
+	 *            the name to set
+	 */
+	public void setName(final String name) {
+		this.name = name;
+	}
+
+	/**
+	 * @return the data
+	 */
+	public Object getData() {
+		return data;
+	}
+
+	/**
+	 * @param data
+	 *            the data to set
+	 */
+	public void setData(final Object data) {
+		this.data = data;
+	}
+
+	/**
+	 * 
+	 * @param destination
+	 *            destination.
+	 */
+	public void addDestination(final Destination destination) {
+		destinations.add(destination);
+	}
+
+	/**
+	 * @return the destinations
+	 */
+	public Collection<Destination> getDestinations() {
+		return destinations;
+	}
+
+	public void clearDestinations() {
+		destinations.clear();
+	}
+
+	public static class Destination {
+		private Job target;
+		private int targetPortNr;
+
+		public Destination(final Job target, final int targetPortNr) {
+			Validate.notNull(target, "target cannot be null");
+			Validate.isTrue(targetPortNr > -1, "targetPortNr cannot be negative", targetPortNr);
+			this.target = target;
+			this.targetPortNr = targetPortNr;
+		}
+
+		/**
+		 * @return the target
+		 */
+		public Job getTarget() {
+			return target;
+		}
+
+		/**
+		 * @return the targetPortNr
+		 */
+		public int getTargetPortNr() {
+			return targetPortNr;
+		}
+
+		public void setTarget(Job target) {
+			this.target = target;
+		}
+
+		public void setTargetPortNr(int targetPortNr) {
+			this.targetPortNr = targetPortNr;
+		}
+
+	}
 
 }
