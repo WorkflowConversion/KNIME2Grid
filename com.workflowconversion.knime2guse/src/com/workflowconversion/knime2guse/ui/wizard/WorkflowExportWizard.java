@@ -19,29 +19,23 @@
 package com.workflowconversion.knime2guse.ui.wizard;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.LinkedList;
 
 import org.apache.commons.lang.Validate;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.IExtension;
-import org.eclipse.core.runtime.IExtensionPoint;
-import org.eclipse.core.runtime.IExtensionRegistry;
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.ui.internal.dialogs.ExportWizard;
-import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeLogger;
-import org.knime.core.node.NodeModel;
-import org.knime.core.node.port.PortType;
+import org.knime.core.node.workflow.NodeContainer;
+import org.knime.core.node.workflow.NodeContainerState;
 import org.knime.core.node.workflow.WorkflowManager;
 import org.knime.workbench.core.util.ImageRepository;
 import org.knime.workbench.core.util.ImageRepository.SharedImages;
 import org.knime.workbench.editor2.WorkflowEditor;
 
-import com.workflowconversion.knime2guse.export.InternalModelConverter;
-import com.workflowconversion.knime2guse.export.KnimeWorkflowExporter;
+import com.workflowconversion.knime2guse.export.io.SourceConverter;
+import com.workflowconversion.knime2guse.export.node.NodeContainerConverter;
+import com.workflowconversion.knime2guse.export.workflow.InternalModelConverter;
+import com.workflowconversion.knime2guse.export.workflow.KnimeWorkflowExporter;
 import com.workflowconversion.knime2guse.model.Workflow;
 
 /**
@@ -55,71 +49,124 @@ import com.workflowconversion.knime2guse.model.Workflow;
 @SuppressWarnings("restriction")
 public class WorkflowExportWizard extends ExportWizard {
 
-    protected static final NodeLogger LOGGER = NodeLogger.getLogger(WorkflowExportWizard.class);
+	protected static final NodeLogger LOGGER = NodeLogger.getLogger(WorkflowExportWizard.class);
 
-    final WorkflowEditor workflowEditor;
-    final List<KnimeWorkflowExporter> exporters;
-    // pages
-    final WorkflowExportPage workflowExportPage;	
+	private final WorkflowEditor workflowEditor;
+	private final Collection<KnimeWorkflowExporter> exporters;
+	private final Collection<NodeContainerConverter> nodeConverters;
+	private final Collection<SourceConverter> sourceConverters;
+	// pages
+	private final WorkflowExportPage workflowExportPage;
 
-    /**
-     * Constructor.
-     */
-    public WorkflowExportWizard(final WorkflowEditor workflowEditor, final Collection<KnimeWorkflowExporter> exporters) {
-        Validate.notNull(workflowEditor, "workflowEditor is required and cannot be null");
-        Validate.notEmpty(exporters, "exporter is required and cannot be null or empty");
-        workflowExportPage = new WorkflowExportPage(exporters);
+	/**
+	 * Constructor.
+	 */
+	public WorkflowExportWizard(final WorkflowEditor workflowEditor, final Collection<KnimeWorkflowExporter> exporters,
+			final Collection<NodeContainerConverter> nodeConverters,
+			final Collection<SourceConverter> sourceConverters) {
+		Validate.notNull(workflowEditor, "workflowEditor is required and cannot be null");
+		Validate.notEmpty(exporters, "exporter is required and cannot be null or empty");
+		workflowExportPage = new WorkflowExportPage(exporters);
 
-        setWindowTitle("Export a Workflow to other platforms");
-        setDefaultPageImageDescriptor(ImageRepository.getImageDescriptor(SharedImages.ExportBig));
-        setNeedsProgressMonitor(true);
+		setWindowTitle("Export a Workflow to other platforms");
+		setDefaultPageImageDescriptor(ImageRepository.getImageDescriptor(SharedImages.ExportBig));
+		setNeedsProgressMonitor(true);
 
-        this.exporters = new ArrayList<KnimeWorkflowExporter>(exporters);
-        this.workflowEditor = workflowEditor;
-    }
+		this.workflowEditor = workflowEditor;
+		this.exporters = exporters;
+		this.nodeConverters = nodeConverters;
+		this.sourceConverters = sourceConverters;
+	}
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.internal.dialogs.ExportWizard#addPages()
-     */
-    @Override
-    public void addPages() {
-        super.addPage(workflowExportPage);
-    }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.eclipse.ui.internal.dialogs.ExportWizard#addPages()
+	 */
+	@Override
+	public void addPages() {
+		super.addPage(workflowExportPage);
+	}
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.internal.dialogs.ExportWizard#performFinish()
-     */
-    @Override
-    public boolean performFinish() {
-        // check if we can finish in the first place
-        if (!canFinish()) {
-            return false;
-        }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.eclipse.ui.internal.dialogs.ExportWizard#performFinish()
+	 */
+	@Override
+	public boolean performFinish() {
+		// check if we can finish in the first place
+		if (!canFinish()) {
+			return false;
+		}
 
-        // Obtain currently active workflow editor
-        final InternalModelConverter converter = new InternalModelConverter(workflowEditor);
-        try {
-            final Workflow workflow = converter.convert();
-            // perform the export
-            final KnimeWorkflowExporter exporter = workflowExportPage.getSelectedExporter();
-            final String exportMode = workflowExportPage.getExportMode();
-            if (exportMode != null) {
-                exporter.setExportMode(exportMode);
-            }
-            if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("Exporting using " + exporter + ", mode=" + exportMode + ", file=" + workflowExportPage.getDestinationFile());
-            }
-            exporter.export(workflow, new File(workflowExportPage.getDestinationFile()));
-            return true;
-        } catch (final Exception e) {
-            LOGGER.error("Could not export workflow", e);
-            e.printStackTrace();
-            return false;
-        }
-    }
+		// Obtain currently active workflow editor
+		final InternalModelConverter converter = new InternalModelConverter(workflowEditor, nodeConverters,
+				sourceConverters);
+		try {
+			final Workflow workflow = converter.convert();
+			// perform the export
+			final KnimeWorkflowExporter exporter = workflowExportPage.getSelectedExporter();
+			final String exportMode = workflowExportPage.getExportMode();
+			if (exportMode != null) {
+				exporter.setExportMode(exportMode);
+			}
+			if (LOGGER.isInfoEnabled()) {
+				LOGGER.info("Exporting using " + exporter + ", mode=" + exportMode + ", file="
+						+ workflowExportPage.getDestinationFile());
+			}
+			exporter.export(workflow, new File(workflowExportPage.getDestinationFile()));
+			return true;
+		} catch (final Exception e) {
+			LOGGER.error("Could not export workflow", e);
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	@Override
+	public boolean canFinish() {
+		boolean canFinish = super.canFinish();
+		if (canFinish) {
+			try {
+				validateWorkflowBeforeExport();
+			} catch (final Exception e) {
+				canFinish = false;
+			}
+		}
+		return canFinish;
+	}
+
+	public void validateWorkflowBeforeExport() {
+		final WorkflowManager workflowManager = workflowEditor.getWorkflowManager();
+		// check that each node is at least valid
+		final Collection<String> invalidNodes = new LinkedList<String>();
+		for (final NodeContainer nodeContainer : workflowManager.getNodeContainers()) {
+			final NodeContainerState state = nodeContainer.getNodeContainerState();
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("Node " + nodeContainer + " is in state " + state);
+			}
+			// allow only properly configured / already executed nodes to be converted
+			if (!(state.isConfigured() || state.isExecuted())) {
+				invalidNodes.add(nodeContainer.getNameWithID());
+			}
+		}
+		if (!invalidNodes.isEmpty()) {
+			final String newLine = System.getProperty("line.separator");
+			final StringBuilder error = new StringBuilder(
+					"The workflow cannot be converted because the following node(s) have not been properly configured:");
+			error.append(newLine).append(newLine);
+			boolean first = true;
+			for (final String invalidNode : invalidNodes) {
+				// prepend a comma to all elements, except for the first one
+				if (!first) {
+					error.append(", ");
+				}
+				error.append(invalidNode);
+				first = false;
+			}
+			throw new RuntimeException(error.toString());
+		}
+	}
 
 }

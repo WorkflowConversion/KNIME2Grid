@@ -189,9 +189,10 @@ Library.
    </requires>
 
    <plugin
-         id="com.workflowconversion.knime2guse.workflowexporter"
+         id="com.workflowconversion.knime2guse"
          download-size="0"
          install-size="0"
-         version="0.0.1.qualifier"/>
+         version="0.0.0"
+         unpack="false"/>
 
 </feature>

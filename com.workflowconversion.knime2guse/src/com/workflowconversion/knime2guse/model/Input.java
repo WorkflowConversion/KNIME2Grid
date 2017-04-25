@@ -19,115 +19,49 @@
 package com.workflowconversion.knime2guse.model;
 
 import org.apache.commons.lang.Validate;
+import org.knime.core.node.workflow.NodeID;
+
 
 /**
  * 
  * 
  * @author Luis de la Garza
  */
-public class Input {
+public class Input extends Port {
 
-    private Job source;
-    private int sourcePortNr;
-    private String name;
-    private Object data;
-    private int x;
-    private int y;
-    private boolean collector;
+	// the ID of the KNIME node that produced the data that goes into this input
+	private NodeID sourceId;
+	// the port number of the job that provides data for this input
+	private int sourcePortNr;
 
-    public boolean isCollector() {
-	return collector;
-    }
+	/**
+	 * @param sourceId
+	 *            the originalSourceId to set
+	 */
+	public void setSourceId(final NodeID sourceId) {
+		Validate.notNull(sourceId, "sourceId cannot be null");
+		this.sourceId = sourceId;
+	}
 
-    public void setCollector(boolean collector) {
-	this.collector = collector;
-    }
+	/**
+	 * @return the originalSourceId
+	 */
+	public NodeID getSourceId() {
+		return sourceId;
+	}
 
-    /**
-     * @return the x
-     */
-    public int getX() {
-	return x;
-    }
+	/**
+	 * @return the sourcePortNr
+	 */
+	public int getSourcePortNr() {
+		return sourcePortNr;
+	}
 
-    /**
-     * @param x
-     *            the x to set
-     */
-    public void setX(final int x) {
-	this.x = x;
-    }
-
-    /**
-     * @return the y
-     */
-    public int getY() {
-	return y;
-    }
-
-    /**
-     * @param y
-     *            the y to set
-     */
-    public void setY(final int y) {
-	this.y = y;
-    }
-
-    /**
-     * @return the name
-     */
-    public String getName() {
-	return name;
-    }
-
-    /**
-     * @param name
-     *            the name to set
-     */
-    public void setName(final String name) {
-	this.name = name;
-    }
-
-    /**
-     * @return the data
-     */
-    public Object getData() {
-	return data;
-    }
-
-    /**
-     * @param data
-     *            the data to set
-     */
-    public void setData(final Object data) {
-	this.data = data;
-    }
-
-    /**
-     * @return the source
-     */
-    public Job getSource() {
-	return source;
-    }
-
-    public void setSource(final Job source) {
-	Validate.notNull(source, "source cannot be null");
-	this.source = source;
-    }
-
-    /**
-     * @return the portNr
-     */
-    public int getSourcePortNr() {
-	return sourcePortNr;
-    }
-
-    /**
-     * @param sourcePortNr
-     *            the portNr to set
-     */
-    public void setSourcePortNr(final int sourcePortNr) {
-	this.sourcePortNr = sourcePortNr;
-    }
-
+	/**
+	 * @param sourcePortNr
+	 *            the sourcePortNr to set
+	 */
+	public void setSourcePortNr(final int sourcePortNr) {
+		this.sourcePortNr = sourcePortNr;
+	}
 }

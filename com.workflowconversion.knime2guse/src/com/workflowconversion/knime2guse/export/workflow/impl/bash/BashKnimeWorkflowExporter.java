@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.workflowconversion.knime2guse.export.impl;
+package com.workflowconversion.knime2guse.export.workflow.impl.bash;
 
 import java.io.File;
 import java.util.Arrays;
@@ -26,7 +26,7 @@ import java.util.Collections;
 import org.eclipse.jface.resource.ImageDescriptor;
 
 import com.workflowconversion.knime2guse.KnimeWorkflowExporterActivator;
-import com.workflowconversion.knime2guse.export.KnimeWorkflowExporter;
+import com.workflowconversion.knime2guse.export.workflow.KnimeWorkflowExporter;
 import com.workflowconversion.knime2guse.format.ExtensionFilter;
 import com.workflowconversion.knime2guse.model.Workflow;
 

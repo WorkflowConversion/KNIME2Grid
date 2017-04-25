@@ -1,0 +1,5 @@
+final java.util.List list = new java.util.LinkedList<String>();
+list.add("one");
+list.add("two");
+list.add("three");
+System.out.println(java.util.Arrays.toString(list.toArray()));

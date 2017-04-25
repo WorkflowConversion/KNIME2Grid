@@ -19,26 +19,33 @@
 package com.workflowconversion.knime2guse.model;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
+import java.util.Map;
+import java.util.TreeMap;
+
+import org.knime.core.node.workflow.NodeID;
 
 /**
- * 
- * 
  * @author Luis de la Garza
  */
 public class Workflow {
 
-	private final Collection<Job> jobs = new LinkedList<Job>();
+	private final Map<NodeID, Job> jobs = new TreeMap<NodeID, Job>();
+
+	// some platforms display workflows visually and this information would be needed
 	private int width;
 	private int height;
+	private String name;
 
 	public void addJob(final Job job) {
-		jobs.add(job);
+		jobs.put(job.getId(), job);
 	}
 
 	public Collection<Job> getJobs() {
-		return Collections.unmodifiableCollection(jobs);
+		return jobs.values();
+	}
+
+	public Job getJob(final NodeID id) {
+		return jobs.get(id);
 	}
 
 	/**
@@ -69,6 +76,21 @@ public class Workflow {
 	 */
 	public void setHeight(final int height) {
 		this.height = height;
+	}
+
+	/**
+	 * @return the name
+	 */
+	public String getName() {
+		return name;
+	}
+
+	/**
+	 * @param name
+	 *            the name to set
+	 */
+	public void setName(final String name) {
+		this.name = name;
 	}
 
 }

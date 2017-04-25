@@ -16,12 +16,15 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.workflowconversion.knime2guse.export.impl;
+package com.workflowconversion.knime2guse.export.workflow.impl.guse;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -36,21 +39,22 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.Validate;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.knime.core.node.NodeLogger;
-import org.knime.core.node.workflow.WorkflowContext;
-import org.knime.core.node.workflow.WorkflowCreationHelper;
-import org.knime.core.node.workflow.WorkflowManager;
 
+import com.genericworkflownodes.knime.commandline.CommandLineElement;
+import com.genericworkflownodes.knime.commandline.impl.CommandLineFile;
+import com.genericworkflownodes.knime.parameter.FileParameter;
 import com.workflowconversion.knime2guse.KnimeWorkflowExporterActivator;
-import com.workflowconversion.knime2guse.export.KnimeWorkflowExporter;
+import com.workflowconversion.knime2guse.export.workflow.KnimeWorkflowExporter;
 import com.workflowconversion.knime2guse.format.ExtensionFilter;
+import com.workflowconversion.knime2guse.model.ConnectionType;
 import com.workflowconversion.knime2guse.model.Input;
 import com.workflowconversion.knime2guse.model.Job;
 import com.workflowconversion.knime2guse.model.Output;
 import com.workflowconversion.knime2guse.model.Workflow;
-import com.workflowconversion.knime2guse.model.Output.Destination;
 
 /**
  * Exports to gUse/WS-PGRADE grids.
@@ -66,9 +70,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider#getId
-	 * ()
+	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider #getId ()
 	 */
 	@Override
 	public String getId() {
@@ -78,8 +80,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider#
-	 * getLongDescription()
+	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider# getLongDescription()
 	 */
 	@Override
 	public String getLongDescription() {
@@ -89,8 +90,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider#
-	 * getShortDescription()
+	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider# getShortDescription()
 	 */
 	@Override
 	public String getShortDescription() {
@@ -100,26 +100,138 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * com.workflowconversion.knime2guse.export.KnimeWorkflowExporter#export(org
+	 * @see com.workflowconversion.knime2guse.export.KnimeWorkflowExporter#export(org
 	 * .knime.core.node.workflow.WorkflowManager, java.io.File)
 	 */
+	// the structure of a gUSE archive is as follows:
+	// workflow.zip
+	//    |
+	//    |- workflow.xml (file containing the workflow definition, more on this below)
+	//    |- [any_name] (directory containing jobs)
+	//  		|
+	//  		|- [job_one_name] (directory containing port folders of a job)
+	//  		|	|
+	//  		|	|- execute.bin (script executing the job, must be named execute.bin)
+	//  		|	|
+	//  		|	|- [0] (directory containing an input file, named after port number)
+	//  		|	|	|
+	//  		|	|	|--0 (the file must be named 0)
+	//  		|	|
+	//  		|	|-[1] (directory containing an input file, named after port number)
+	//  		|		|
+	//  		|		|--0 (the file must be named 0)
+	//  		|
+	//  		|- [job_two_name] (another directory containing port folders of a job)
+	//  
+	// the structure of workflow.xml is roughly as given below:
+	// <workflow>
+	//  	<graf name="testgraph2>
+	//  		<job name="Mixer">
+	//				<input name="words" prejob="" preoutput="" seq="0"/>
+	//				<input name="numbers" prejob="" preoutput="" seq="1"/>
+	//				<output name="combined" seq="2"/>
+	//			</job>
+	//			<job name="Modifier">
+	//				<input name="wordsnumbers" prejob="Mixer" preoutput="1" seq="0"/>
+	//				<output name="finalresult" seq="1"/>
+	//			</job>
+	//  	</graf>
+	//  	<real>
+	//			<job name="Mixer">
+	//				<input name="words" prejob="" preoutput="" seq="0">
+	// 					<port_prop key="file" value="C:/fakepath/words.txt"/>
+	// 					<port_prop key="intname" value="words"/>
+	//				</input>
+	//				<input name="numbers" prejob="" preoutput="" seq="1">
+	//					<port_prop key="file" value="C:/fakepath/numbers.txt"/>
+	//					<port_prop key="intname" value="numbers"/>
+	//				</input>
+	//				<output name="combined" seq="2"/>
+	//				<execute key="gridtype" value="moab"/>
+	//				<execute key="resource" value="queue_name"/>
+	// 				<execute key="binary" value="C:/fakepath/combiner.sh"/>
+	//				<execute key="jobistype" value="binary"/>
+	//				<execute key="grid" value="cluster.uni.com"/>
+	//				<execute key="params" value="-w words -n numbers -c combined"/>
+	//			</job>
+	//			<job name="Modifier">
+	//				<input name="wordsnumbers" prejob="Mixer" preoutput="1" seq="0"/>
+	//				<output name="finalresult" seq="1"/>
+	//				<execute key="gridtype" value="moab"/>
+	//				<execute key="resource" value="queue_name"/>
+	// 				<execute key="binary" value="C:/fakepath/modifier.sh"/>
+	//				<execute key="jobistype" value="binary"/>
+	//				<execute key="grid" value="cluster.uni.com"/>
+	//				<execute key="params" value="-i wordsnumbers -o finalresult"/>
+	//			</job>
+	// 		</real>
+	// </workflow>
+	// 
+	// workflow.xml, in this case, represents a workflow composed of two jobs (Mixer, Modifier);
+	// Mixer has two inputs and one output, which is connected to the only Modifier's input. 
+	// Modifier has one channeled input and one output.
+	//  
 	@Override
 	public void export(final Workflow workflow, final File destination) throws Exception {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("exporting using " + getShortDescription() + " to [" + destination.getAbsolutePath() + "]");
 		}
 
-		final StringBuilder builder = new StringBuilder();
-		generateWorkflowXml(workflow, builder);
+		fixWorkflowForGuse(workflow);
 
 		final ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(destination));
-		zipOutputStream.putNextEntry(new ZipEntry("workflow.xml"));
-
-		zipOutputStream.write(formatXml(builder.toString()).getBytes());
-
-		zipOutputStream.closeEntry();
+		// first the workflow descriptor
+		writeWorkflowDescriptor(workflow, zipOutputStream);
+		//writeWorkflowData(workflow, zipOutputStream);
 		zipOutputStream.close();
+	}
+
+	private void writeWorkflowDescriptor(final Workflow workflow, final ZipOutputStream zipOutputStream)
+			throws IOException, TransformerException {
+		final StringBuilder builder = new StringBuilder();
+		generateWorkflowXml(workflow, builder);
+		zipOutputStream.putNextEntry(new ZipEntry("workflow.xml"));
+		zipOutputStream.write(formatXml(builder.toString()).getBytes());
+		zipOutputStream.closeEntry();
+	}
+
+	private void writeWorkflowData(final Workflow workflow, final ZipOutputStream zipOutputStream)
+			throws IOException, TransformerException {
+		// add a folder named after the workflow
+		final String rootEntryName = workflow.getName() + '/';
+		zipOutputStream.putNextEntry(new ZipEntry(rootEntryName));
+		// add a folder for each job
+		for (final Job job : workflow.getJobs()) {
+			writeJob(rootEntryName, zipOutputStream, job);
+		}
+		zipOutputStream.closeEntry();
+	}
+
+	private void writeJob(final String rootEntryName, final ZipOutputStream zipOutputStream, final Job job)
+			throws IOException {
+		final String jobEntryName = rootEntryName + job.getName() + '/';
+		zipOutputStream.putNextEntry(new ZipEntry(jobEntryName));
+		// we don't generate execute.bin because the binaries are already present on the server
+		// and we only need to produce the command line that will be passed to the binary.
+		writeInputs(jobEntryName, zipOutputStream, job);
+		zipOutputStream.closeEntry();
+	}
+
+	private void writeInputs(final String rootEntryName, final ZipOutputStream zipOutputStream, final Job job)
+			throws IOException {
+		final String inputsFolderName = rootEntryName + "inputs/";
+		zipOutputStream.putNextEntry(new ZipEntry(inputsFolderName));
+		for (final Input input : job.getInputs()) {
+			if (input.getConnectionType() == ConnectionType.UserProvided) {
+				final String inputFolderName = inputsFolderName + input.getPortNr() + '/';
+				zipOutputStream.putNextEntry(new ZipEntry(inputFolderName));
+				zipOutputStream.putNextEntry(new ZipEntry(inputFolderName + '0'));
+				zipOutputStream.write(Files.readAllBytes(Paths.get(((FileParameter) input.getData()).getValue())));
+				zipOutputStream.closeEntry();
+				zipOutputStream.closeEntry();
+			}
+		}
+		zipOutputStream.closeEntry();
 	}
 
 	private String formatXml(final String unformattedXml) throws TransformerException {
@@ -137,7 +249,6 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	 * @param workflow
 	 */
 	private void generateWorkflowXml(final Workflow workflow, final StringBuilder builder) {
-		fixWorkflowForGuse(workflow);
 		final String wfName = "KNIME_Export" + System.currentTimeMillis();
 		builder.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>");
 		builder.append("<workflow");
@@ -165,18 +276,20 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			// inputs
 			int totalIgnoredInputs = 0;
 			for (int i = 0, n = job.getNrInputs(); i < n; i++) {
-				final Input input = job.getInput(i);
+				final Input input = job.getInputByPortNr(i);
 				if (ignoreInput(input)) {
 					totalIgnoredInputs++;
 				}
 			}
 			int ignoredInputsSoFar = 0;
 			for (int i = 0, n = job.getNrInputs(); i < n; i++) {
-				final Input input = job.getInput(i);
+				final Input input = job.getInputByPortNr(i);
 				if (ignoreInput(input)) {
 					ignoredInputsSoFar++;
+					continue;
 				}
-				final Job source = input.getSource();
+				
+				final Job source = workflow.getJob(input.getSourceId());
 				String preJob = "";
 				String preOutput = "";
 				// in the case of inputs whose source is the 'Input File' node
@@ -188,7 +301,8 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 				// if (!"Input File".equals(source.getName())) {
 				if (source != null) {
 					preJob = source.getName();
-					preOutput = Integer.toString(input.getSourcePortNr() + source.getNrInputs() - totalIgnoredInputs);
+					// TODO: WTF?
+					preOutput = Integer.toString(i + source.getNrInputs() - totalIgnoredInputs);
 				}
 				// }
 				builder.append("<input");
@@ -204,7 +318,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			// outputs
 			int ignoredOutputsSoFar = 0;
 			for (int i = 0, n = job.getNrOutputs(); i < n; i++) {
-				final Output output = job.getOutput(i);
+				final Output output = job.getOutputByPortNr(i);
 				if (ignoreOutput(output)) {
 					ignoredOutputsSoFar++;
 					continue;
@@ -239,26 +353,27 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			// inputs
 			int ignoredInputs = 0;
 			for (int i = 0, n = job.getNrInputs(); i < n; i++) {
-				final Input input = job.getInput(i);
+				final Input input = job.getInputByPortNr(i);
 				if (ignoreInput(input)) {
 					ignoredInputs++;
 					continue;
 				}
-				final Job source = input.getSource();
-				String preJob = source.getName();
-				String preOutput = Integer.toString(input.getSourcePortNr());
+				final Job source = workflow.getJob(input.getSourceId());
+				final String preJob = source.getName();
+				final String preOutput = Integer.toString(input.getSourcePortNr());
 				builder.append("<input");
 				addAttribute(builder, "name", input.getName());
 				addAttribute(builder, "prejob", preJob);
 				addAttribute(builder, "preoutput", preOutput);
 				addAttribute(builder, "seq", i - ignoredInputs);
 				addAttribute(builder, "text", "Port description");
-				// TODO: x, y???
+				// FIXME: x, y for ports?
 				addAttribute(builder, "x", input.getX());
 				addAttribute(builder, "y", input.getY());
 				builder.append(">");
-				addConcretePortProperty(builder, "eparam", input.isCollector() ? "1" : "0");
-				final String waiting = input.isCollector() ? "all" : "one";
+				addConcretePortProperty(builder, "eparam",
+						input.getConnectionType() == ConnectionType.Collector ? "1" : "0");
+				final String waiting = input.getConnectionType() == ConnectionType.Collector ? "all" : "one";
 				addConcretePortProperty(builder, "waitingtmp", waiting);
 				addConcretePortProperty(builder, "waiting", waiting);
 				addConcretePortProperty(builder, "intname", input.getName());
@@ -269,7 +384,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			// outputs
 			int ignoredOutputs = 0;
 			for (int i = 0, n = job.getNrOutputs(); i < n; i++) {
-				final Output output = job.getOutput(i);
+				final Output output = job.getOutputByPortNr(i);
 				if (ignoreOutput(output)) {
 					ignoredOutputs++;
 					continue;
@@ -281,7 +396,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 				addAttribute(builder, "x", output.getX());
 				addAttribute(builder, "y", output.getY());
 				builder.append(">");
-				final String mainCount = output.isGenerator() ? "2" : "1";
+				final String mainCount = output.getConnectionType() == ConnectionType.Generator ? "2" : "1";
 				addConcretePortProperty(builder, "maincount0", mainCount);
 				addConcretePortProperty(builder, "intname", output.getName());
 				addConcretePortProperty(builder, "type0", "permanent");
@@ -290,9 +405,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			}
 
 			addExecutionProperty(builder, "type", "Sequence");
-			// addExecutionProperty(builder, "params",
-			// job.generateCommandLine());
-			addExecutionProperty(builder, "params", "");
+			addExecutionProperty(builder, "params", StringEscapeUtils.escapeXml(generateCommandLine(job)));
 			addExecutionProperty(builder, "jobistype", "binary");
 			addExecutionProperty(builder, "jobmanager", findJobManager(job));
 			addMiddlewareSpecificProperties(builder);
@@ -303,83 +416,121 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		builder.append("</workflow>");
 	}
 
-	private void fixWorkflowForGuse(Workflow workflow) {
+	private String generateCommandLine(final Job job) {
+		final StringBuilder builder = new StringBuilder();
+		for (final CommandLineElement element : job.getCommandLine()) {
+			final String command;
+			// paths of needed files need to be made relative to the job
+			if (element instanceof CommandLineFile) {
+				// gUSE names the files as the names of the ports
+				final CommandLineFile commandLineFile = (CommandLineFile) element;
+				final FileParameter associatedParameter = commandLineFile.getValue();
+				command = associatedParameter.getValue();
+			} else {
+				command = element.getStringRepresentation();
+			}
+			builder.append(command);
+			builder.append(' ');
+		}
+		return builder.toString();
+	}
+
+	private void fixWorkflowForGuse(final Workflow workflow) {
 		final Map<String, Integer> nameOccurrenceMap = new TreeMap<String, Integer>();
 		for (final Job job : workflow.getJobs()) {
 			fixJobName(job);
-			Integer nameOccurrences = nameOccurrenceMap.get(job.getName());
-			if (nameOccurrences == null) {
-				nameOccurrences = 1;
-				nameOccurrenceMap.put(job.getName(), nameOccurrences);
-			} else {
-				final String oldName = job.getName();
-				job.setName(oldName + nameOccurrences);
-				nameOccurrenceMap.put(oldName, nameOccurrences + 1);
-			}
-			// if job is a generator job, we will:
-			// 1. move connection from the source of its input port
-			// to the input port of the target of its output port
-			// 2. don't add the generator job to the workflow
-			if (job.getJobType() == Job.JobType.Generator) {
-				// get the input port from the "generator" job (right now,
-				// limited to 1!!!!)
-				final Input generatorInput = job.getInput(0);
-				// get the output port from the "generator" job (right now,
-				// limited to 1!!!)
-				final Output generatorOutput = job.getOutput(0);
-				// connect the source of the collector input to the target of
-				// the generator output
-				final Destination sourceDestination = generatorInput.getSource().getOutput(0).getDestinations().iterator().next();
-				sourceDestination.setTarget(generatorOutput.getDestinations().iterator().next().getTarget());
-				sourceDestination.setTargetPortNr(0);
-				// remove the connection between the target job and the
-				// generator output
-				generatorOutput.getDestinations().iterator().next().getTarget().getInput(0).setSource(generatorInput.getSource());
-				// flag the port from the source as collector port
-				generatorInput.getSource().getOutput(0).setGenerator(true);
-				// "remove" the job by ignoring it
-				job.setIgnored(true);
-			} else if (job.getJobType() == Job.JobType.Collector) {
-				// get the input port from the "collector" job
-				final Input collectorInput = job.getInput(0);
-				// get the output port from the "collector" job
-				final Output collectorOutput = job.getOutput(0);
-				// connect the source of the input to the target of the
-				// collector output
-				final Destination sourceDestination = collectorInput.getSource().getOutput(0).getDestinations().iterator().next();
-				sourceDestination.setTarget(collectorOutput.getDestinations().iterator().next().getTarget());
-				sourceDestination.setTargetPortNr(0);
-				// remove the connection between the target job and the
-				// collector output
-				collectorOutput.getDestinations().iterator().next().getTarget().getInput(0).setSource(collectorInput.getSource());
-				// flag the port as collector
-				collectorOutput.getDestinations().iterator().next().getTarget().getInput(0).setCollector(true);
-				// "remove" the job by ignoring it
-				job.setIgnored(true);
-			} else if ("FileMerger".equals(job.getName())) {
-				// prepare the target job
-				final Job targetJob = job.getOutput(0).getDestinations().iterator().next().getTarget();
-				targetJob.clearInputs();
-				for (int i = 0; i < job.getNrOutputs(); i++) {
-					final Job sourceJob = job.getInput(i).getSource();
-					sourceJob.getOutput(i).clearDestinations();
-					final Destination dest = new Destination(targetJob, i);
-					sourceJob.getOutput(i).addDestination(dest);
-					targetJob.getInput(i).setSource(sourceJob);
-				}
-				// ignore this job
-				job.setIgnored(true);
-			}
+			fixDuplicateJobName(nameOccurrenceMap, job);
+			fixFileLists(job);
 		}
+		// Nodes like ZipLoopStart/End will be collapsed into a port
+
 	}
 
-	private void fixJobName(Job job) {
+	// remove any weird characters not allowed in job names
+	private void fixJobName(final Job job) {
 		// guse does not allow job names with spaces among other things
 		final String name = job.getName();
 		if (name.indexOf(' ') >= 0) {
 			job.setName(name.replace(" ", ""));
 		}
 	}
+
+	// gUSE doesn't allow duplicate in the names of jobs, so that has to be fixed
+	private void fixDuplicateJobName(final Map<String, Integer> nameOccurrenceMap, final Job job) {
+		Integer nameOccurrences = nameOccurrenceMap.get(job.getName());
+		if (nameOccurrences == null) {
+			nameOccurrences = 1;
+			nameOccurrenceMap.put(job.getName(), nameOccurrences);
+		} else {
+			final String oldName = job.getName();
+			job.setName(oldName + nameOccurrences);
+			nameOccurrenceMap.put(oldName, nameOccurrences + 1);
+		}
+	}
+	
+	// gUSE doesn't support lists of files, we will use a custom script for such jobs
+	private void fixFileLists(final Job job) {
+		
+	}
+	
+	// // if job is a generator job, we will:
+	// // 1. move connection from the source of its input port to the input port of the target of its output
+	// port
+	// // 2. don't add the generator job to the workflow
+	// if (job.getJobType() == Job.JobType.Generator) {
+	// // get the input port from the "generator" job (right now, limited to 1!!!!)
+	// final Input generatorInput = job.getInputByPortNr(0);
+	// // get the output port from the "generator" job (right now, limited to 1!!!)
+	// final Output generatorOutput = job.getOutputByPortNr(0);
+	// // connect the source of the collector input to the target of the generator output
+	// final Destination sourceDestination = workflow.getJob(generatorInput.getSourceId()).getOutputByPortNr(0)
+	// .getDestinations().iterator().next();
+	// sourceDestination.setTarget(generatorOutput.getDestinations().iterator().next().getTarget());
+	// sourceDestination.setTargetPortNr(0);
+	// // remove the connection between the target job and the generator output
+	// // FIXME: this shitty line of code right here doesn't compile
+	// // generatorOutput.getDestinations().iterator().next().getTarget().getInput(0)
+	// // .setSource(generatorInput.getSource());
+	// // flag the port from the source as collector port
+	// workflow.getJob(generatorInput.getSourceId()).getOutputByPortNr(0).setGenerator(true);
+	// // "remove" the job by ignoring it
+	// job.setIgnored(true);
+	// } else if (job.getJobType() == Job.JobType.Collector) {
+	// // get the input port from the "collector" job
+	// final Input collectorInput = job.getInputByPortNr(0);
+	// // get the output port from the "collector" job
+	// final Output collectorOutput = job.getOutputByPortNr(0);
+	// // connect the source of the input to the target of the
+	// // collector output
+	// final Destination sourceDestination = workflow.getJob(collectorInput.getSourceId()).getOutputByPortNr(0)
+	// .getDestinations().iterator().next();
+	// sourceDestination.setTarget(collectorOutput.getDestinations().iterator().next().getTarget());
+	// sourceDestination.setTargetPortNr(0);
+	// // remove the connection between the target job and the
+	// // collector output
+	// // FIXME: this shit line of code right here doesn't compile
+	// // collectorOutput.getDestinations().iterator().next().getTarget().getInput(0)
+	// // .setSource(collectorInput.getSource());
+	// // flag the port as collector
+	// collectorOutput.getDestinations().iterator().next().getTarget().getInputByPortNr(0).setCollector(true);
+	// // "remove" the job by ignoring it
+	// job.setIgnored(true);
+	// } else if ("FileMerger".equals(job.getName())) {
+	// // prepare the target job
+	// final Job targetJob = job.getOutputByPortNr(0).getDestinations().iterator().next().getTarget();
+	// targetJob.clearInputs();
+	// for (int i = 0; i < job.getNrOutputs(); i++) {
+	// final Job sourceJob = workflow.getJob(job.getInputByPortNr(i).getSourceId());
+	// sourceJob.getOutputByPortNr(i).clearDestinations();
+	// final Destination dest = new Destination(targetJob, i);
+	// sourceJob.getOutputByPortNr(i).addDestination(dest);
+	// // FIXME: this shitty line of code right here doesn't compile
+	// // targetJob.getInput(i).setSource(sourceJob);
+	// }
+	// // ignore this job
+	// job.setIgnored(true);
+	// }
+	// }
 
 	private void addMiddlewareSpecificProperties(final StringBuilder builder) {
 		if ("moab".equals(exportMode)) {
@@ -397,7 +548,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 
 	private boolean ignoreInput(final Input input) {
 		// ignore unconnected inputs
-		return input.getSource() == null;
+		return input.getConnectionType() == ConnectionType.UserProvided;
 	}
 
 	private boolean ignoreOutput(final Output output) {
@@ -447,8 +598,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider#
-	 * getImageDescriptor()
+	 * @see com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider# getImageDescriptor()
 	 */
 	@Override
 	public ImageDescriptor getImageDescriptor() {
@@ -458,16 +608,11 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.workflowconversion.knime2guse.export.ui.ExtensionFilterProvider#
-	 * getExtensionFilters()
+	 * @see com.workflowconversion.knime2guse.export.ui.ExtensionFilterProvider# getExtensionFilters()
 	 */
 	@Override
 	public Collection<ExtensionFilter> getExtensionFilters() {
 		return Arrays.asList(new ExtensionFilter("*.zip", "ZIP Archive"));
-	}
-
-	private interface GuseElement {
-		void appendXml(StringBuilder builder);
 	}
 
 	@Override

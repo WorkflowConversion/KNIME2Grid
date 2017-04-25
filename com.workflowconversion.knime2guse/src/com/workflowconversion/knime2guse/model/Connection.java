@@ -1,138 +1,107 @@
-/**
- * Copyright (c) 2013, Luis de la Garza.
- *
- * This file is part of KnimeWorkflowExporter.
- * 
- * GenericKnimeNodes is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package com.workflowconversion.knime2guse.model;
 
+import org.knime.core.node.workflow.ConnectionID;
+import org.knime.core.node.workflow.NodeID;
+
 /**
+ * Defines a connection between two jobs.
  * 
- * 
- * @author Luis de la Garza
+ * @author delagarza
+ *
  */
 public class Connection {
 
-	private Job job;
-	private int portNr;
+	// id of this connection
+	private final ConnectionID connectionId;
+	// ids of the nodes involved in this connection
+	private final NodeID sourceId;
+	private final NodeID destId;
+	// original source/dest port numbers are the port numbers given in the KNIME workflow
+	private final int originalSourcePort;
+	private final int originalDestPort;
+	// final source/dest port numbers (the ones belonging to the internal model jobs)
+	private int sourcePort;
+	private int destPort;
 
 	/**
-	 * @return the destination
+	 * @param connectionId
+	 * @param sourceId
+	 * @param destId
+	 * @param originalSourcePort
+	 * @param originalDestPort
 	 */
-	public Job getJob() {
-		return job;
+	public Connection(final ConnectionID connectionId, final NodeID sourceId, final NodeID destId,
+			final int originalSourcePort, final int originalDestPort) {
+		this.connectionId = connectionId;
+		this.sourceId = sourceId;
+		this.destId = destId;
+		this.originalSourcePort = originalSourcePort;
+		this.originalDestPort = originalDestPort;
 	}
 
 	/**
-	 * @return the portNr
+	 * @return the connectionId
 	 */
-	public int getPortNr() {
-		return portNr;
+	public ConnectionID getConnectionId() {
+		return connectionId;
 	}
 
 	/**
-	 * @param job
-	 *            the job to set
+	 * @return the sourcePort
 	 */
-	public void setJob(final Job job) {
-		this.job = job;
+	public int getSourcePort() {
+		return sourcePort;
 	}
 
 	/**
-	 * @param portNr
-	 *            the portNr to set
+	 * @param sourcePort
+	 *            the sourcePort to set
 	 */
-	public void setPortNr(final int portNr) {
-		this.portNr = portNr;
+	public void setSourcePort(int sourcePort) {
+		this.sourcePort = sourcePort;
 	}
 
-	// private final Job source;
-	// private final int sourceOutputPortNr;
-	// private final Job dest;
-	// private final int destInputPortNr;
-	//
-	// private Connection(final Job source, final int sourceOutputPortNr,
-	// final Job dest, final int destInputPortNr) {
-	// this.source = source;
-	// this.sourceOutputPortNr = sourceOutputPortNr;
-	// this.dest = dest;
-	// this.destInputPortNr = destInputPortNr;
-	// }
-	//
-	// /**
-	// * @return the source
-	// */
-	// public Job getSource() {
-	// return source;
-	// }
-	//
-	// /**
-	// * @return the sourceOutputPortNr
-	// */
-	// public int getSourceOutputPortNr() {
-	// return sourceOutputPortNr;
-	// }
-	//
-	// /**
-	// * @return the dest
-	// */
-	// public Job getDest() {
-	// return dest;
-	// }
-	//
-	// /**
-	// * @return the destInputPortNr
-	// */
-	// public int getDestInputPortNr() {
-	// return destInputPortNr;
-	// }
-	//
-	// public static class ConnectionBuilder {
-	// private Job source;
-	// private int sourceOutputPortNr;
-	// private Job dest;
-	// private int destInputPortNr;
-	//
-	// public ConnectionBuilder setSource(final Job source) {
-	// this.source = source;
-	// return this;
-	// }
-	//
-	// public ConnectionBuilder setSourceOutputPortNr(
-	// final int sourceOutputPortNr) {
-	// Validate.isTrue(sourceOutputPortNr > -1,
-	// "sourceOutputPortNr cannot be negative", sourceOutputPortNr);
-	// this.sourceOutputPortNr = sourceOutputPortNr;
-	// return this;
-	// }
-	//
-	// public ConnectionBuilder setDest(final Job dest) {
-	// this.dest = dest;
-	// return this;
-	// }
-	//
-	// public ConnectionBuilder setDestInputPortNr(final int destInputPortNr) {
-	// Validate.isTrue(destInputPortNr > -1,
-	// "destInputPortNr cannot be negative", destInputPortNr);
-	// this.destInputPortNr = destInputPortNr;
-	// return this;
-	// }
-	//
-	// public Connection build() {
-	// return new Connection(source, sourceOutputPortNr, dest,
-	// destInputPortNr);
-	// }
-	// }
+	/**
+	 * @return the destPort
+	 */
+	public int getDestPort() {
+		return destPort;
+	}
+
+	/**
+	 * @param destPort
+	 *            the destPort to set
+	 */
+	public void setDestPort(int destPort) {
+		this.destPort = destPort;
+	}
+
+	/**
+	 * @return the sourceId
+	 */
+	public NodeID getSourceId() {
+		return sourceId;
+	}
+
+	/**
+	 * @return the destId
+	 */
+	public NodeID getDestId() {
+		return destId;
+	}
+
+	/**
+	 * @return the originalSourcePort
+	 */
+	public int getOriginalSourcePort() {
+		return originalSourcePort;
+	}
+
+	/**
+	 * @return the originalDestPort
+	 */
+	public int getOriginalDestPort() {
+		return originalDestPort;
+	}
+
 }

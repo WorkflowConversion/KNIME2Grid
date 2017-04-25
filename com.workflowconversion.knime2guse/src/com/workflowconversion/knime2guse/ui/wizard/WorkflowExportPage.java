@@ -45,8 +45,8 @@ import org.knime.workbench.core.util.ImageRepository;
 import org.knime.workbench.core.util.ImageRepository.SharedImages;
 import org.knime.workbench.ui.wizards.export.WorkflowExportWizard;
 
-import com.workflowconversion.knime2guse.export.KnimeWorkflowExporter;
 import com.workflowconversion.knime2guse.export.ui.DisplayInformationProvider;
+import com.workflowconversion.knime2guse.export.workflow.KnimeWorkflowExporter;
 import com.workflowconversion.knime2guse.format.ExtensionFilter;
 
 /**
