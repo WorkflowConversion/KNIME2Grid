@@ -29,39 +29,39 @@ import org.knime.core.node.workflow.NodeID;
  */
 public class Input extends Port {
 
-	// the ID of the KNIME node that produced the data that goes into this input
-	private NodeID sourceId;
-	// the port number of the job that provides data for this input
-	private int sourcePortNr;
+        // the ID of the KNIME node that produced the data that goes into this input
+        private NodeID sourceId;
+        // the port number of the job that provides data for this input
+        private int sourcePortNr;
 
-	/**
-	 * @param sourceId
-	 *            the originalSourceId to set
-	 */
-	public void setSourceId(final NodeID sourceId) {
-		Validate.notNull(sourceId, "sourceId cannot be null");
-		this.sourceId = sourceId;
-	}
+        /**
+         * @param sourceId
+         *            the originalSourceId to set
+         */
+        public void setSourceId(final NodeID sourceId) {
+                Validate.notNull(sourceId, "sourceId cannot be null");
+                this.sourceId = sourceId;
+        }
 
-	/**
-	 * @return the originalSourceId
-	 */
-	public NodeID getSourceId() {
-		return sourceId;
-	}
+        /**
+         * @return the originalSourceId
+         */
+        public NodeID getSourceId() {
+                return sourceId;
+        }
 
-	/**
-	 * @return the sourcePortNr
-	 */
-	public int getSourcePortNr() {
-		return sourcePortNr;
-	}
+        /**
+         * @return the sourcePortNr
+         */
+        public int getSourcePortNr() {
+                return sourcePortNr;
+        }
 
-	/**
-	 * @param sourcePortNr
-	 *            the sourcePortNr to set
-	 */
-	public void setSourcePortNr(final int sourcePortNr) {
-		this.sourcePortNr = sourcePortNr;
-	}
+        /**
+         * @param sourcePortNr
+         *            the sourcePortNr to set
+         */
+        public void setSourcePortNr(final int sourcePortNr) {
+                this.sourcePortNr = sourcePortNr;
+        }
 }

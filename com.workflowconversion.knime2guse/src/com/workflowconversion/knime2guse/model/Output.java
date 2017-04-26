@@ -32,61 +32,61 @@ import org.apache.commons.lang.Validate;
  */
 public class Output extends Port {
 
-	private final List<Destination> destinations = new LinkedList<Destination>();
+        private final List<Destination> destinations = new LinkedList<Destination>();
 
-	/**
-	 * 
-	 * @param destination
-	 *            destination.
-	 */
-	public void addDestination(final Destination destination) {
-		destinations.add(destination);
-	}
+        /**
+         * 
+         * @param destination
+         *            destination.
+         */
+        public void addDestination(final Destination destination) {
+                destinations.add(destination);
+        }
 
-	/**
-	 * @return the destinations
-	 */
-	public Collection<Destination> getDestinations() {
-		return destinations;
-	}
+        /**
+         * @return the destinations
+         */
+        public Collection<Destination> getDestinations() {
+                return destinations;
+        }
 
-	public void clearDestinations() {
-		destinations.clear();
-	}
+        public void clearDestinations() {
+                destinations.clear();
+        }
 
-	public static class Destination {
-		private Job target;
-		private int targetPortNr;
+        public static class Destination {
+                private Job target;
+                private int targetPortNr;
 
-		public Destination(final Job target, final int targetPortNr) {
-			Validate.notNull(target, "target cannot be null");
-			Validate.isTrue(targetPortNr > -1, "targetPortNr cannot be negative", targetPortNr);
-			this.target = target;
-			this.targetPortNr = targetPortNr;
-		}
+                public Destination(final Job target, final int targetPortNr) {
+                        Validate.notNull(target, "target cannot be null");
+                        Validate.isTrue(targetPortNr > -1, "targetPortNr cannot be negative", targetPortNr);
+                        this.target = target;
+                        this.targetPortNr = targetPortNr;
+                }
 
-		/**
-		 * @return the target
-		 */
-		public Job getTarget() {
-			return target;
-		}
+                /**
+                 * @return the target
+                 */
+                public Job getTarget() {
+                        return target;
+                }
 
-		/**
-		 * @return the targetPortNr
-		 */
-		public int getTargetPortNr() {
-			return targetPortNr;
-		}
+                /**
+                 * @return the targetPortNr
+                 */
+                public int getTargetPortNr() {
+                        return targetPortNr;
+                }
 
-		public void setTarget(final Job target) {
-			this.target = target;
-		}
+                public void setTarget(final Job target) {
+                        this.target = target;
+                }
 
-		public void setTargetPortNr(final int targetPortNr) {
-			this.targetPortNr = targetPortNr;
-		}
+                public void setTargetPortNr(final int targetPortNr) {
+                        this.targetPortNr = targetPortNr;
+                }
 
-	}
+        }
 
 }

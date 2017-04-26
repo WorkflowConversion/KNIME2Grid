@@ -40,7 +40,6 @@ import com.genericworkflownodes.knime.commandline.CommandLineElement;
  * @author Luis de la Garza
  */
 public class Job implements GraphicElement {
-
 	// coordinates, might not even be used in some formats (i.e., bash)
 	private int x;
 	private int y;
