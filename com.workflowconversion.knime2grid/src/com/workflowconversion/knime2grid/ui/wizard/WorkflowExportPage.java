@@ -143,17 +143,17 @@ public class WorkflowExportPage extends WizardPage {
 		// ------------------------
 
 		// ------- export mode
-		final Group selectExportModeGroup = new Group(container, SWT.NULL);
+		//final Group selectExportModeGroup = new Group(container, SWT.NULL);
 		final GridLayout selectExportModeGroupLayout = new GridLayout(2, false);
 		selectExportModeGroupLayout.horizontalSpacing = HORIZONTAL_SPACING;
-		selectExportModeGroup.setLayout(selectExportModeGroupLayout);
-		selectExportModeGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		//selectExportModeGroup.setLayout(selectExportModeGroupLayout);
+		//selectExportModeGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
-		final Label exportModeLabel = new Label(selectExportModeGroup, SWT.HORIZONTAL | SWT.LEFT);
-		exportModeLabel.setText("Select an export mode:");
+		//final Label exportModeLabel = new Label(selectExportModeGroup, SWT.HORIZONTAL | SWT.LEFT);
+		//exportModeLabel.setText("Select an export mode:");
 
-		final Combo exportModeCombo = new Combo(selectExportModeGroup, SWT.PUSH | SWT.DROP_DOWN);
-		exportModeCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		//final Combo exportModeCombo = new Combo(selectExportModeGroup, SWT.PUSH | SWT.DROP_DOWN);
+		//exportModeCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		// -------------------------
 
 		// ------- file destination
@@ -231,29 +231,30 @@ public class WorkflowExportPage extends WizardPage {
 						description.setText(selectedExporter.getLongDescription());
 						//
 						final Collection<String> exportModes = selectedExporter.getSupportedExportModes();
-						exportModeCombo.setEnabled(exportModes != null && !exportModes.isEmpty());
-						exportModeCombo.removeAll();
-						for (final String exportMode : selectedExporter.getSupportedExportModes()) {
-							exportModeCombo.add(exportMode);
-						}
-						if (exportModeCombo.isEnabled()) {
-							exportModeCombo.select(0);
-						} else {
-							exportMode = null;
-						}
+						exportMode = exportModes.iterator().next();
+//						exportModeCombo.setEnabled(exportModes != null && !exportModes.isEmpty());
+//						exportModeCombo.removeAll();
+//						for (final String exportMode : selectedExporter.getSupportedExportModes()) {
+//							exportModeCombo.add(exportMode);
+//						}
+//						if (exportModeCombo.isEnabled()) {
+//							exportModeCombo.select(0);
+//						} else {
+//							exportMode = null;
+//						}
 					}
 				}
 			}
 		});
 
-		exportModeCombo.addModifyListener(new ModifyListener() {
-			@Override
-			public void modifyText(final ModifyEvent e) {
-				if (e.getSource() == exportModeCombo) {
-					exportMode = exportModeCombo.getItem(exportModeCombo.getSelectionIndex());
-				}
-			}
-		});
+//		exportModeCombo.addModifyListener(new ModifyListener() {
+//			@Override
+//			public void modifyText(final ModifyEvent e) {
+//				if (e.getSource() == exportModeCombo) {
+//					exportMode = exportModeCombo.getItem(exportModeCombo.getSelectionIndex());
+//				}
+//			}
+//		});
 
 		destinationText.addModifyListener(new ModifyListener() {
 			@Override

@@ -113,10 +113,10 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 		final WorkflowManager miniWorkflowManager = WORKFLOW_MANAGER
 				.createAndAddProject("Mini Workflow for " + nativeNodeContainer.getNameWithID(), creationHelper);
 		// copy and paste this node into the mini workflow
-		final WorkflowCopyContent content = new WorkflowCopyContent();
-		content.setNodeIDs(nativeNodeContainer.getID());
+		final WorkflowCopyContent.Builder contentBuilder = WorkflowCopyContent.builder();
+		contentBuilder.setNodeIDs(nativeNodeContainer.getID());
 
-		final NodeID miniWorkflowNodeId = miniWorkflowManager.copyFromAndPasteHere(workflowManager, content)
+		final NodeID miniWorkflowNodeId = miniWorkflowManager.copyFromAndPasteHere(workflowManager, contentBuilder.build())
 				.getNodeIDs()[0];
 		int currentInput = 0, currentOutput = 0;
 

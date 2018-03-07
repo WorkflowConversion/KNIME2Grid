@@ -24,11 +24,13 @@ import java.nio.file.Files;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.commons.lang.Validate;
 import org.eclipse.draw2d.IFigure;
 import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.gef.EditPart;
+import org.eclipse.gef.editparts.AbstractGraphicalEditPart;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.ConnectionContainer;
 import org.knime.core.node.workflow.NativeNodeContainer;
@@ -36,6 +38,7 @@ import org.knime.core.node.workflow.NodeContainer;
 import org.knime.core.node.workflow.NodeID;
 import org.knime.core.node.workflow.SubNodeContainer;
 import org.knime.core.node.workflow.WorkflowManager;
+import org.knime.core.ui.node.workflow.NodeContainerUI;
 import org.knime.workbench.editor2.WorkflowEditor;
 import org.knime.workbench.editor2.editparts.NodeContainerEditPart;
 import org.knime.workbench.editor2.editparts.NodeInPortEditPart;
@@ -75,7 +78,11 @@ public class InternalModelConverter {
 	}
 
 	public Workflow convert() throws Exception {
-		final WorkflowManager workflowManager = editor.getWorkflowManager();
+		final Optional<WorkflowManager> workflowManagerWrapper = editor.getWorkflowManager();
+		if (!workflowManagerWrapper.isPresent()) {
+			throw new NullPointerException("editor.getWorkflowManager() returned an empty Optional<WorkflowManager>. This seems to be a bug and should be reported.");
+		}
+		final WorkflowManager workflowManager = workflowManagerWrapper.get();
 		final Workflow workflow = new Workflow();
 
 		// 1. convert the nodes (inputs/outputs will be created, but their type will be Unassigned)
@@ -177,18 +184,19 @@ public class InternalModelConverter {
 		
 		int minX = Integer.MAX_VALUE;
 		int minY = Integer.MAX_VALUE;
-
+		
 		for (final EditPart ep : (List<EditPart>) workflowRootEditPart.getChildren()) {
 			if (ep instanceof NodeContainerEditPart) {
-				final NodeContainer nc = ((NodeContainerEditPart) ep).getNodeContainer();
+				final NodeContainerUI nc = ((NodeContainerEditPart) ep).getNodeContainer();
+				
 				final Job job = workflow.getJob(nc.getID());
 				if (job != null) {
-					Rectangle rectangle = ((NodeContainerEditPart) ep).getContentPane().getBounds();
-					if (rectangle.x() < minX) {
-						minX = rectangle.x();
+					Rectangle rectangle = ((AbstractGraphicalEditPart) ep).getFigure().getBounds();
+					if (rectangle.x < minX) {
+						minX = rectangle.x;
 					}
-					if (rectangle.y() < minY) {
-						minY = rectangle.y();
+					if (rectangle.y < minY) {
+						minY = rectangle.y;
 					}
 					setCoordinates(job, rectangle);
 					for (final Object o : ep.getChildren()) {

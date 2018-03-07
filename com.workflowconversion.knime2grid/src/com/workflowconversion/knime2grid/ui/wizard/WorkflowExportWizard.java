@@ -21,6 +21,7 @@ package com.workflowconversion.knime2grid.ui.wizard;
 import java.io.File;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Optional;
 
 import org.apache.commons.lang.Validate;
 import org.eclipse.ui.internal.dialogs.ExportWizard;
@@ -138,7 +139,11 @@ public class WorkflowExportWizard extends ExportWizard {
 	}
 
 	public void validateWorkflowBeforeExport() {
-		final WorkflowManager workflowManager = workflowEditor.getWorkflowManager();
+		final Optional<WorkflowManager> workflowManagerWrapper = workflowEditor.getWorkflowManager();
+		if (!workflowManagerWrapper.isPresent()) {
+			throw new NullPointerException("workflowEditor.getWorkflowManager() returned an empty Optional<WorkflowManager>. This is probably a bug and should be reported.");
+		}
+		final WorkflowManager workflowManager = workflowManagerWrapper.get();
 		// check that each node is at least valid
 		final Collection<String> invalidNodes = new LinkedList<String>();
 		for (final NodeContainer nodeContainer : workflowManager.getNodeContainers()) {
