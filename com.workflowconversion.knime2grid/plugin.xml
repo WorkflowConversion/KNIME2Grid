@@ -2,23 +2,6 @@
 <?eclipse version="3.4"?>
 <plugin>
    <extension
-         point="org.eclipse.ui.editorActions">
-      <editorContribution
-            id="com.workflowconversion.knime2grid.workflowExportEditorContribution"
-            targetID="org.knime.workbench.editor.WorkflowEditor">
-         <action
-               class="com.workflowconversion.knime2grid.export.ui.action.WorkflowExportActionDelegate"
-               icon="icons/export.png"
-               id="com.workflowconversion.knime2grid.action1"
-               label="Export Workflow"
-               menubarPath="file/ExportWorkflow"
-               style="push"
-               toolbarPath="org.knime.workbench.editor.menu/group1"
-               tooltip="Export Workflow">
-         </action>
-      </editorContribution>
-   </extension>
-   <extension
          point="org.knime.product.splashExtension">
       <splashExtension
             icon="icons/icon.png"
@@ -41,6 +24,60 @@
       <initializer
             class="com.workflowconversion.knime2grid.preference.PreferenceInitializer">
       </initializer>
+   </extension>
+   <extension
+         point="org.eclipse.ui.commands">
+      <category
+            id="com.workflowconversion.knime2grid.commands.category"
+            name="Workflow Conversion Category">
+      </category>
+      <command
+            categoryId="com.workflowconversion.knime2grid.commands.category"
+            id="com.workflowconversion.knime2grid.commands.convertWorkflowCommand"
+            name="Convert Workflow...">
+      </command>
+   </extension>
+   <extension
+         point="org.eclipse.ui.handlers">
+      <handler
+            class="com.workflowconversion.knime2grid.handlers.ConvertWorkflowHandler"
+            commandId="com.workflowconversion.knime2grid.commands.convertWorkflowCommand">
+      </handler>
+   </extension>
+   <extension
+         point="org.eclipse.ui.bindings">
+      <key
+            commandId="com.workflowconversion.knime2grid.commands.convertWorkflowCommand"
+            contextId="org.eclipse.ui.contexts.window"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+6">
+      </key>
+   </extension>
+   <extension
+         point="org.eclipse.ui.menus">
+      <menuContribution
+            locationURI="menu:file?after=ExportWorkflow">
+         <menu
+               id="com.workflowconversion.knime2grid.menus.sampleMenu"
+               label="Worklow Conversion">
+            <command
+                  commandId="com.workflowconversion.knime2grid.commands.convertWorkflowCommand"
+                  id="com.workflowconversion.knime2grid.menus.sampleCommand">
+            </command>
+         </menu>
+      </menuContribution>
+      <menuContribution
+            locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
+         <toolbar
+               id="com.workflowconversion.knime2grid.toolbars.sampleToolbar">
+            <command
+                  commandId="com.workflowconversion.knime2grid.commands.convertWorkflowCommand"
+                  icon="icons/export.png"
+                  id="com.workflowconversion.knime2grid.toolbars.convertWorkflowToolbarButton"
+                  tooltip="Convert Workflow">
+            </command>
+         </toolbar>
+      </menuContribution>
    </extension>
 
 
