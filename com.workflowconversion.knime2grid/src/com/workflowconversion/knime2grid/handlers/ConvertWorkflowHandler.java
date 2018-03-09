@@ -7,6 +7,7 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.ErrorDialog;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -25,39 +26,42 @@ import com.workflowconversion.knime2grid.ui.wizard.WorkflowExportWizard;
  */
 public class ConvertWorkflowHandler extends AbstractHandler {
 
-    private static final int SIZING_WIZARD_WIDTH = 470;
-    private static final int SIZING_WIZARD_HEIGHT = 550;
+	private static final int SIZING_WIZARD_WIDTH = 470;
+	private static final int SIZING_WIZARD_HEIGHT = 550;
 
-    @Override
-    public Object execute(ExecutionEvent event) throws ExecutionException {
-	final IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-	Validate.notNull(workbenchWindow, "workbenchWindow is null. This is probably a bug and should be reported.");
+	@Override
+	public Object execute(ExecutionEvent event) throws ExecutionException {
+		final IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+		Validate.notNull(workbenchWindow, "workbenchWindow is null. This is probably a bug and should be reported.");
 
-	final WorkflowEditor workflowEditor = (WorkflowEditor) PlatformUI.getWorkbench().getActiveWorkbenchWindow()
-		.getActivePage().getActiveEditor();
-	Validate.notNull(workflowEditor, "workflowEditor is null. This is probably a bug and should be reported.");
+		final Shell parent = workbenchWindow.getShell();
+		final WorkflowEditor workflowEditor = (WorkflowEditor) workbenchWindow.getActivePage().getActiveEditor();
+		if (workflowEditor == null) {
+			MessageDialog.openInformation(parent, "KNIME - Workflow Conversion", "Please select a workflow editor.");
+			return null;
+		}
 
-	final WorkflowExportWizard wizard = new WorkflowExportWizard(workflowEditor,
-		KnimeWorkflowExporterProvider.getInstance().getWorkflowExporters(),
-		KnimeWorkflowExporterProvider.getInstance().getNodeConverters(),
-		KnimeWorkflowExporterProvider.getInstance().getSourceConverters());
-	final Shell parent = workbenchWindow.getShell();
+		final WorkflowExportWizard wizard = new WorkflowExportWizard(workflowEditor,
+				KnimeWorkflowExporterProvider.getInstance().getWorkflowExporters(),
+				KnimeWorkflowExporterProvider.getInstance().getNodeConverters(),
+				KnimeWorkflowExporterProvider.getInstance().getSourceConverters());
 
-	try {
-	    wizard.validateWorkflowBeforeExport();
-	} catch (final Exception e) {
-	    // show an error window
-	    final IStatus status = new Status(IStatus.ERROR, KnimeWorkflowExporterActivator.PLUGIN_ID,
-		    "Workflow is not valid for conversion.");
-	    ErrorDialog.openError(parent, "Cannot convert workflow", e.getMessage(), status);
-	    return null;
+		try {
+			wizard.validateWorkflowBeforeExport();
+		} catch (final Exception e) {
+			// show an error window
+			final IStatus status = new Status(IStatus.ERROR, KnimeWorkflowExporterActivator.PLUGIN_ID,
+					"Workflow is not valid for conversion.");
+			ErrorDialog.openError(parent, "KNIME - Workflow Conversion",
+					"Could not convert workflow. Reason:\n" + e.getMessage(), status);
+			return null;
+		}
+		final WizardDialog dialog = new WizardDialog(parent, wizard);
+		dialog.create();
+		dialog.getShell().setSize(Math.max(SIZING_WIZARD_WIDTH, dialog.getShell().getSize().x), SIZING_WIZARD_HEIGHT);
+		dialog.open();
+
+		// according to the javadoc, return value must be null
+		return null;
 	}
-	final WizardDialog dialog = new WizardDialog(parent, wizard);
-	dialog.create();
-	dialog.getShell().setSize(Math.max(SIZING_WIZARD_WIDTH, dialog.getShell().getSize().x), SIZING_WIZARD_HEIGHT);
-	dialog.open();
-
-	// according to the javadoc, return value must be null
-	return null;
-    }
 }

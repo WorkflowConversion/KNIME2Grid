@@ -36,7 +36,6 @@ import org.knime.core.node.workflow.ConnectionContainer;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeContainer;
 import org.knime.core.node.workflow.NodeID;
-import org.knime.core.node.workflow.SubNodeContainer;
 import org.knime.core.node.workflow.WorkflowManager;
 import org.knime.core.ui.node.workflow.NodeContainerUI;
 import org.knime.workbench.editor2.WorkflowEditor;
@@ -53,11 +52,12 @@ import com.workflowconversion.knime2grid.model.GraphicElement;
 import com.workflowconversion.knime2grid.model.Input;
 import com.workflowconversion.knime2grid.model.Job;
 import com.workflowconversion.knime2grid.model.Output;
-import com.workflowconversion.knime2grid.model.Workflow;
 import com.workflowconversion.knime2grid.model.Output.Destination;
+import com.workflowconversion.knime2grid.model.Workflow;
 
 /**
- * This class takes a workflow from the KNIME UI and transforms it to the internal format.
+ * This class takes a workflow from the KNIME UI and transforms it to the
+ * internal format.
  * 
  * @author Luis de la Garza
  */
@@ -80,12 +80,14 @@ public class InternalModelConverter {
 	public Workflow convert() throws Exception {
 		final Optional<WorkflowManager> workflowManagerWrapper = editor.getWorkflowManager();
 		if (!workflowManagerWrapper.isPresent()) {
-			throw new NullPointerException("editor.getWorkflowManager() returned an empty Optional<WorkflowManager>. This seems to be a bug and should be reported.");
+			throw new NullPointerException(
+					"editor.getWorkflowManager() returned an empty Optional<WorkflowManager>. This seems to be a bug and should be reported.");
 		}
 		final WorkflowManager workflowManager = workflowManagerWrapper.get();
 		final Workflow workflow = new Workflow();
 
-		// 1. convert the nodes (inputs/outputs will be created, but their type will be Unassigned)
+		// 1. convert the nodes (inputs/outputs will be created, but their type
+		// will be Unassigned)
 		convertNodes(workflowManager, workflow);
 
 		// 2. connect inputs/outputs
@@ -94,7 +96,8 @@ public class InternalModelConverter {
 		// 3. handle all inputs that were not set as channels
 		handleUnassignedInputs(workflowManager, workflow);
 
-		// 4. go through all of the jobs to obtain the coordinates of the input/output ports
+		// 4. go through all of the jobs to obtain the coordinates of the
+		// input/output ports
 		setGraphicalElements(workflow, editor);
 
 		return workflow;
@@ -119,7 +122,8 @@ public class InternalModelConverter {
 					if (convertedJob == null) {
 						throw new RuntimeException("Got a null job when converting node: " + nativeNodeContainer);
 					}
-					// we only have the jobs, without connections, this will be done later on
+					// we only have the jobs, without connections, this will be
+					// done later on
 					workflow.addJob(convertedJob);
 				}
 			} else if (nc instanceof WorkflowManager) {
@@ -181,14 +185,14 @@ public class InternalModelConverter {
 		final Rectangle bounds = figure.getBounds();
 		workflow.setHeight(bounds.height);
 		workflow.setWidth(bounds.width);
-		
+
 		int minX = Integer.MAX_VALUE;
 		int minY = Integer.MAX_VALUE;
-		
+
 		for (final EditPart ep : (List<EditPart>) workflowRootEditPart.getChildren()) {
 			if (ep instanceof NodeContainerEditPart) {
 				final NodeContainerUI nc = ((NodeContainerEditPart) ep).getNodeContainer();
-				
+
 				final Job job = workflow.getJob(nc.getID());
 				if (job != null) {
 					Rectangle rectangle = ((AbstractGraphicalEditPart) ep).getFigure().getBounds();
@@ -231,7 +235,7 @@ public class InternalModelConverter {
 				}
 			}
 		}
-		// use minX and minY as offset		
+		// use minX and minY as offset
 		final Collection<GraphicElement> graphicElements = new LinkedList<GraphicElement>();
 		for (final Job job : workflow.getJobs()) {
 			graphicElements.add(job);

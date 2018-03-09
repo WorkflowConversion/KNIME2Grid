@@ -27,12 +27,7 @@
    </extension>
    <extension
          point="org.eclipse.ui.commands">
-      <category
-            id="com.workflowconversion.knime2grid.commands.category"
-            name="Workflow Conversion Category">
-      </category>
       <command
-            categoryId="com.workflowconversion.knime2grid.commands.category"
             id="com.workflowconversion.knime2grid.commands.convertWorkflowCommand"
             name="Convert Workflow...">
       </command>
@@ -45,15 +40,6 @@
       </handler>
    </extension>
    <extension
-         point="org.eclipse.ui.bindings">
-      <key
-            commandId="com.workflowconversion.knime2grid.commands.convertWorkflowCommand"
-            contextId="org.eclipse.ui.contexts.window"
-            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="M1+6">
-      </key>
-   </extension>
-   <extension
          point="org.eclipse.ui.menus">
       <menuContribution
             locationURI="menu:file?after=ExportWorkflow">
@@ -62,19 +48,20 @@
                label="Worklow Conversion">
             <command
                   commandId="com.workflowconversion.knime2grid.commands.convertWorkflowCommand"
-                  id="com.workflowconversion.knime2grid.menus.sampleCommand">
+                  icon="icons/export.png"
+                  id="com.workflowconversion.knime2grid.menus.convertWorkflowMenu">
             </command>
          </menu>
       </menuContribution>
       <menuContribution
             locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
          <toolbar
-               id="com.workflowconversion.knime2grid.toolbars.sampleToolbar">
+               id="com.workflowconversion.knime2grid.toolbars.workflowConversionToolbar">
             <command
                   commandId="com.workflowconversion.knime2grid.commands.convertWorkflowCommand"
                   icon="icons/export.png"
                   id="com.workflowconversion.knime2grid.toolbars.convertWorkflowToolbarButton"
-                  tooltip="Convert Workflow">
+                  tooltip="Convert Workflow to other Formats">
             </command>
          </toolbar>
       </menuContribution>
