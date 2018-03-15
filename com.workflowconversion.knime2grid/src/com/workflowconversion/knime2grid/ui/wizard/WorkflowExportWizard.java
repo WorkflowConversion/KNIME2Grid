@@ -53,7 +53,6 @@ public class WorkflowExportWizard extends ExportWizard {
 	protected static final NodeLogger LOGGER = NodeLogger.getLogger(WorkflowExportWizard.class);
 
 	private final WorkflowEditor workflowEditor;
-	private final Collection<KnimeWorkflowExporter> exporters;
 	private final Collection<NodeContainerConverter> nodeConverters;
 	private final Collection<SourceConverter> sourceConverters;
 	// pages
@@ -74,7 +73,6 @@ public class WorkflowExportWizard extends ExportWizard {
 		setNeedsProgressMonitor(true);
 
 		this.workflowEditor = workflowEditor;
-		this.exporters = exporters;
 		this.nodeConverters = nodeConverters;
 		this.sourceConverters = sourceConverters;
 	}
@@ -108,13 +106,9 @@ public class WorkflowExportWizard extends ExportWizard {
 			final Workflow workflow = converter.convert();
 			// perform the export
 			final KnimeWorkflowExporter exporter = workflowExportPage.getSelectedExporter();
-			final String exportMode = workflowExportPage.getExportMode();
-			if (exportMode != null) {
-				exporter.setExportMode(exportMode);
-			}
 			if (LOGGER.isInfoEnabled()) {
-				LOGGER.info("Exporting using " + exporter + ", mode=" + exportMode + ", file="
-						+ workflowExportPage.getDestinationFile());
+				LOGGER.info(
+						"Exporting using " + exporter + ", destinationFile=" + workflowExportPage.getDestinationFile());
 			}
 			exporter.export(workflow, new File(workflowExportPage.getDestinationFile()));
 			return true;
@@ -141,7 +135,8 @@ public class WorkflowExportWizard extends ExportWizard {
 	public void validateWorkflowBeforeExport() {
 		final Optional<WorkflowManager> workflowManagerWrapper = workflowEditor.getWorkflowManager();
 		if (!workflowManagerWrapper.isPresent()) {
-			throw new NullPointerException("workflowEditor.getWorkflowManager() returned an empty Optional<WorkflowManager>. This is probably a bug and should be reported.");
+			throw new NullPointerException(
+					"workflowEditor.getWorkflowManager() returned an empty Optional<WorkflowManager>. This is probably a bug and should be reported.");
 		}
 		final WorkflowManager workflowManager = workflowManagerWrapper.get();
 		// check that each node is at least valid
@@ -151,7 +146,8 @@ public class WorkflowExportWizard extends ExportWizard {
 			if (LOGGER.isDebugEnabled()) {
 				LOGGER.debug("Node " + nodeContainer + " is in state " + state);
 			}
-			// allow only properly configured / already executed nodes to be converted
+			// allow only properly configured / already executed nodes to be
+			// converted
 			if (!(state.isConfigured() || state.isExecuted())) {
 				invalidNodes.add(nodeContainer.getNameWithID());
 			}

@@ -43,7 +43,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.knime.workbench.core.util.ImageRepository;
 import org.knime.workbench.core.util.ImageRepository.SharedImages;
-import org.knime.workbench.ui.wizards.export.WorkflowExportWizard;
 
 import com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider;
 import com.workflowconversion.knime2grid.export.workflow.KnimeWorkflowExporter;
@@ -65,15 +64,14 @@ public class WorkflowExportPage extends WizardPage {
 	private final ArrayList<KnimeWorkflowExporter> exporters;
 	private int selectedIndex;
 	private String destinationFilePath;
-	private String exportMode;
 
 	/**
 	 * @param pageName
 	 * @param selection
 	 */
 	public WorkflowExportPage(final Collection<KnimeWorkflowExporter> exporters) {
-		super("com.workflowconversion.knime2grid.ui.wizard.WorkflowExportPage", "Select the destination format", ImageRepository
-				.getImageDescriptor(SharedImages.ExportBig));
+		super("com.workflowconversion.knime2grid.ui.wizard.WorkflowExportPage", "Select the destination format",
+				ImageRepository.getImageDescriptor(SharedImages.ExportBig));
 		Validate.notEmpty(exporters, "exporters cannot be null or empty");
 		this.exporters = new ArrayList<KnimeWorkflowExporter>(exporters);
 		this.selectedIndex = -1;
@@ -112,9 +110,8 @@ public class WorkflowExportPage extends WizardPage {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * org.eclipse.jface.dialogs.IDialogPage#createControl(org.eclipse.swt.widgets
-	 * .Composite)
+	 * @see org.eclipse.jface.dialogs.IDialogPage#createControl(org.eclipse.swt.
+	 * widgets .Composite)
 	 */
 	@Override
 	public void createControl(final Composite parent) {
@@ -141,20 +138,6 @@ public class WorkflowExportPage extends WizardPage {
 			formatCombo.add(infoProvider.getShortDescription());
 		}
 		// ------------------------
-
-		// ------- export mode
-		//final Group selectExportModeGroup = new Group(container, SWT.NULL);
-		final GridLayout selectExportModeGroupLayout = new GridLayout(2, false);
-		selectExportModeGroupLayout.horizontalSpacing = HORIZONTAL_SPACING;
-		//selectExportModeGroup.setLayout(selectExportModeGroupLayout);
-		//selectExportModeGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-
-		//final Label exportModeLabel = new Label(selectExportModeGroup, SWT.HORIZONTAL | SWT.LEFT);
-		//exportModeLabel.setText("Select an export mode:");
-
-		//final Combo exportModeCombo = new Combo(selectExportModeGroup, SWT.PUSH | SWT.DROP_DOWN);
-		//exportModeCombo.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-		// -------------------------
 
 		// ------- file destination
 		final Group selectDestinationGroup = new Group(container, SWT.NULL);
@@ -186,37 +169,6 @@ public class WorkflowExportPage extends WizardPage {
 		description.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		// -------------------------------------
 
-		// ------------------- listeners / action handlers
-		// formatCombo.addModifyListener(new ModifyListener() {
-		// @Override
-		// public void modifyText(final ModifyEvent e) {
-		// if (e.getSource() == formatCombo) {
-		// selectedIndex = formatCombo.getSelectionIndex();
-		// if (selectedIndex > -1) {
-		// final KnimeWorkflowExporter selectedExporter =
-		// exporters.get(selectedIndex);
-		// // change the image and the description
-		// final Image scaledPic = ImageDescriptor.createFromImageData(
-		// selectedExporter.getImageDescriptor().getImageData().scaledTo(150,
-		// 150)).createImage();
-		// image.setImage(scaledPic);
-		// description.setText(selectedExporter.getLongDescription());
-		// //
-		// final Collection<String> exportModes =
-		// selectedExporter.getSupportedExportModes();
-		// exportModeCombo.setEnabled(exportModes != null &&
-		// exportModes.isEmpty());
-		// exportModeCombo.removeAll();
-		// for (final String exportMode :
-		// selectedExporter.getSupportedExportModes()) {
-		// exportModeCombo.add(exportMode);
-		// }
-		// }
-		// }
-		// updatePageComplete();
-		// }
-		// });
-
 		formatCombo.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(final ModifyEvent e) {
@@ -225,36 +177,16 @@ public class WorkflowExportPage extends WizardPage {
 					if (selectedIndex > -1) {
 						final KnimeWorkflowExporter selectedExporter = exporters.get(selectedIndex);
 						// change the image and the description
-						final Image scaledPic = ImageDescriptor.createFromImageData(
-								selectedExporter.getImageDescriptor().getImageData().scaledTo(150, 150)).createImage();
+						final Image scaledPic = ImageDescriptor
+								.createFromImageData(
+										selectedExporter.getImageDescriptor().getImageData().scaledTo(150, 150))
+								.createImage();
 						image.setImage(scaledPic);
 						description.setText(selectedExporter.getLongDescription());
-						//
-						final Collection<String> exportModes = selectedExporter.getSupportedExportModes();
-						exportMode = exportModes.iterator().next();
-//						exportModeCombo.setEnabled(exportModes != null && !exportModes.isEmpty());
-//						exportModeCombo.removeAll();
-//						for (final String exportMode : selectedExporter.getSupportedExportModes()) {
-//							exportModeCombo.add(exportMode);
-//						}
-//						if (exportModeCombo.isEnabled()) {
-//							exportModeCombo.select(0);
-//						} else {
-//							exportMode = null;
-//						}
 					}
 				}
 			}
 		});
-
-//		exportModeCombo.addModifyListener(new ModifyListener() {
-//			@Override
-//			public void modifyText(final ModifyEvent e) {
-//				if (e.getSource() == exportModeCombo) {
-//					exportMode = exportModeCombo.getItem(exportModeCombo.getSelectionIndex());
-//				}
-//			}
-//		});
 
 		destinationText.addModifyListener(new ModifyListener() {
 			@Override
@@ -314,15 +246,5 @@ public class WorkflowExportPage extends WizardPage {
 
 	private void updatePageComplete() {
 		setPageComplete(selectedIndex > -1 && StringUtils.isNotBlank(destinationFilePath));
-	}
-
-	/**
-	 * Gets the currently selected export mode, or {@code null} if none has been
-	 * selected.
-	 * 
-	 * @return The export mode.
-	 */
-	public String getExportMode() {
-		return exportMode;
 	}
 }

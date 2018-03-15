@@ -19,7 +19,6 @@
 package com.workflowconversion.knime2grid.export.workflow;
 
 import java.io.File;
-import java.util.Collection;
 
 import com.workflowconversion.knime2grid.export.ui.KnimeWorkflowExporterInformationProvider;
 import com.workflowconversion.knime2grid.model.Workflow;
@@ -30,8 +29,7 @@ import com.workflowconversion.knime2grid.model.Workflow;
  * 
  * @author Luis de la Garza
  */
-public interface KnimeWorkflowExporter extends
-		KnimeWorkflowExporterInformationProvider {
+public interface KnimeWorkflowExporter extends KnimeWorkflowExporterInformationProvider {
 
 	/**
 	 * Exports the given workflow into the passed file.
@@ -42,17 +40,4 @@ public interface KnimeWorkflowExporter extends
 	 *            The destination file.
 	 */
 	void export(final Workflow workflow, final File destination) throws Exception;
-	
-	/**
-	 * Obtain all of the supported export modes.
-	 * @return 	A collection containing the support modes. Can be null or empty if only
-	 * 			one export mode is supported.
-	 */
-	Collection<String> getSupportedExportModes();
-	
-	/**
-	 * Sets the export mode.
-	 * @param exportMode The export mode to set.
-	 */
-	void setExportMode(final String exportMode);
 }

@@ -40,8 +40,8 @@ import org.knime.core.util.FileUtil;
 
 import com.genericworkflownodes.knime.commandline.CommandLineElement;
 import com.genericworkflownodes.knime.commandline.impl.CommandLineFile;
-import com.genericworkflownodes.knime.commandline.impl.CommandLineKNIMEWorkflowFile;
 import com.genericworkflownodes.knime.commandline.impl.CommandLineFixedString;
+import com.genericworkflownodes.knime.commandline.impl.CommandLineKNIMEWorkflowFile;
 import com.genericworkflownodes.knime.commandline.impl.CommandLineParameter;
 import com.genericworkflownodes.knime.nodes.io.importer.MimeFileImporterNodeFactory;
 import com.genericworkflownodes.knime.nodes.io.outputfile.OutputFileNodeFactory;
@@ -61,9 +61,11 @@ import com.workflowconversion.knime2grid.model.Output;
  */
 public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 
-	// -workflow.variable="<name>","<value>","<type>" (type is one of int, double, String)
+	private static final String FLOW_VARIABLE_PREFIX_RIGHT = "\",\"";
+	// -workflow.variable="<name>","<value>","<type>" (type is one of int,
+	// double, String)
 	// sets flow variables when executing workflows in batch mode.
-	private static final String FLOW_VARIABLE_PREFIX = "-workflow.variable=\"";
+	private static final String FLOW_VARIABLE_PREFIX_LEFT = "-workflow.variable=\"";
 	private static final String FLOW_VARIABLE_SUFFIX = "\",\"String\"";
 
 	private final static NodeLogger LOGGER = NodeLogger.getLogger(DefaultKnimeNodeConverter.class);
@@ -104,7 +106,8 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 		final Job job = new Job();
 		ConverterUtils.copyBasicInformation(job, nativeNodeContainer);
 
-		// create a temporary folder on which we will create all of the mini sub-wfs
+		// create a temporary folder on which we will create all of the mini
+		// sub-wfs
 		final Path sandboxDir = workingDirectory.toPath();
 
 		final Path miniWorkflowDir = Files.createTempDirectory(sandboxDir, "miniwf");
@@ -116,12 +119,14 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 		final WorkflowCopyContent.Builder contentBuilder = WorkflowCopyContent.builder();
 		contentBuilder.setNodeIDs(nativeNodeContainer.getID());
 
-		final NodeID miniWorkflowNodeId = miniWorkflowManager.copyFromAndPasteHere(workflowManager, contentBuilder.build())
-				.getNodeIDs()[0];
+		final NodeID miniWorkflowNodeId = miniWorkflowManager
+				.copyFromAndPasteHere(workflowManager, contentBuilder.build()).getNodeIDs()[0];
 		int currentInput = 0, currentOutput = 0;
 
 		final Collection<CommandLineElement> commandLineElements = new LinkedList<CommandLineElement>();
-		// knime -noexit -consoleLog -application org.knime.product.KNIME_BATCH_APPLICATION -nosplash -workflowFile="<workflow-path>"
+		// knime -noexit -consoleLog -application
+		// org.knime.product.KNIME_BATCH_APPLICATION -nosplash
+		// -workflowFile="<workflow-path>"
 		job.setExecutableName("knime");
 		commandLineElements.add(new CommandLineFixedString("-noexit"));
 		commandLineElements.add(new CommandLineFixedString("-consoleLog"));
@@ -133,10 +138,13 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 		for (final ConnectionContainer connectionContainer : workflowManager
 				.getIncomingConnectionsFor(nativeNodeContainer.getID())) {
 			final NodeID sourceNodeId = connectionContainer.getSource();
-			// this node is the recipient of another node's output find out which port is part of this connection
+			// this node is the recipient of another node's output find out
+			// which port is part of this connection
 			final int destPort = connectionContainer.getDestPort();
-			// we now have the destination port and node... this is enough information to
-			// create a node that will feed data into this port time to find out what kind of port this is
+			// we now have the destination port and node... this is enough
+			// information to
+			// create a node that will feed data into this port time to find out
+			// what kind of port this is
 			final NodeInPort nodeInPort = nativeNodeContainer.getInPort(destPort);
 			final PortType portType = nodeInPort.getPortType();
 			final Class<? extends PortObject> inPortObjectClass = portType.getPortObjectClass();
@@ -151,7 +159,8 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 			job.addInput(input);
 			if (DataTable.class.isAssignableFrom(inPortObjectClass)) {
 				if (hasCsvReaderSource(workflowManager, sourceNodeId)) {
-					// since we know that the source of this input is a CSVReader, we can directly
+					// since we know that the source of this input is a
+					// CSVReader, we can directly
 					// create a CSVReader node in the mini workflow
 					LOGGER.info("Creating CSVReader");
 					// copy the settings from the origin CSVReader
@@ -164,7 +173,8 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 					inputSettings.add(new VariableSetting("filename", inputFileKey));
 				}
 			} else if (IURIPortObject.class.isAssignableFrom(inPortObjectClass)) {
-				// the number of elements in IURIPortObjects is dynamic, so we should
+				// the number of elements in IURIPortObjects is dynamic, so we
+				// should
 				// flag this as multifile just to be sure
 				input.setMultiFile(true);
 				LOGGER.info("Creating FileInput");
@@ -214,7 +224,7 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 				final NodeFactory<? extends NodeModel> nodeFactory;
 				final NodeSettings nodeSettings = ConverterUtils.createEmptyNodeSettings();
 				final Output output = new Output();
-	
+
 				final String outputFileKey = "output" + currentOutput;
 				final Collection<VariableSetting> outputSettings = new LinkedList<VariableSetting>();
 				if (DataTable.class.isAssignableFrom(outPortObjectClass)) {
@@ -231,20 +241,22 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 				} else if (IURIPortObject.class.isAssignableFrom(outPortObjectClass)) {
 					nodeFactory = new OutputFileNodeFactory();
 					outputSettings.add(new VariableSetting("FILENAME", outputFileKey, "tmpfile.txt"));
-					// the number of elements in IURIPortObjects is dynamic, so we should
+					// the number of elements in IURIPortObjects is dynamic, so
+					// we should
 					// flag this as multifile just to be sure
 					output.setMultiFile(true);
 					// TODO: do we need something like the following?
-					// outputSettings.add(new VariableSetting("FILE_EXTENSION", "extension_" + currentOutput));
+					// outputSettings.add(new VariableSetting("FILE_EXTENSION",
+					// "extension_" + currentOutput));
 				} else {
 					nodeFactory = new PortObjectWriterNodeFactory(portType);
 					outputSettings.add(new VariableSetting("filename", outputFileKey));
 				}
 				commandLineElements.add(buildFilePathAsFlowVariable(outputFileKey));
 				final NodeID miniWorkflowDataNodeId = miniWorkflowManager.addNode(nodeFactory);
-	
+
 				addFlowVariables(nodeSettings, outputSettings);
-	
+
 				// save the settings in the data node
 				miniWorkflowManager.loadNodeSettings(miniWorkflowDataNodeId, nodeSettings);
 				// connect them
@@ -257,13 +269,14 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 			}
 		}
 
-		// we went through all of the inputs/outpus and added needed nodes to provide/extract data,
+		// we went through all of the inputs/outpus and added needed nodes to
+		// provide/extract data,
 		// we can now save the mini workflow
 		miniWorkflowManager.save(miniWorkflowDir.toFile(), new ExecutionMonitor(), true);
 
 		// compress the workflow folder into a zip file
 		final Path miniWorkflowArchive = Files.createTempFile(sandboxDir,
-				"knimejob_" + nativeNodeContainer.getID().toString(), "zip");
+				"knimejob_" + nativeNodeContainer.getID().toString(), ".zip");
 		FileUtil.zipDir(miniWorkflowArchive.toFile(), miniWorkflowDir.toFile(), 9);
 		commandLineElements.add(new CommandLineKNIMEWorkflowFile(miniWorkflowArchive.toFile()));
 		// add the zipped workflow as input
@@ -291,7 +304,9 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 	}
 
 	private CommandLineElement buildFilePathAsFlowVariable(final String name) {
-		final FileParameter fileParameter = new FileParameter(name, "dummy");
+		// the value will be set later
+		final FileParameter fileParameter = new FileParameter(name,
+				"if you see this, it means that the code is broken! Report this bug!");
 		return new CommandLineFile(fileParameter, buildFlowVariablePrefix(name), FLOW_VARIABLE_SUFFIX);
 	}
 
@@ -301,7 +316,7 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 	}
 
 	private String buildFlowVariablePrefix(final String name) {
-		return FLOW_VARIABLE_PREFIX + name + "\",";
+		return FLOW_VARIABLE_PREFIX_LEFT + name + FLOW_VARIABLE_PREFIX_RIGHT;
 	}
 
 	private boolean hasCsvReaderSource(final WorkflowManager workflowManager, final NodeID sourceNodeId) {

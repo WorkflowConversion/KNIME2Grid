@@ -21,7 +21,6 @@ package com.workflowconversion.knime2grid.export.workflow.impl.bash;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 
 import org.eclipse.jface.resource.ImageDescriptor;
 
@@ -41,7 +40,8 @@ public class BashKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	 * (non-Javadoc)
 	 * 
 	 * @see
-	 * com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider#getId()
+	 * com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider#
+	 * getId()
 	 */
 	@Override
 	public String getId() {
@@ -51,7 +51,9 @@ public class BashKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider#getLongDescription()
+	 * @see
+	 * com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider#
+	 * getLongDescription()
 	 */
 	@Override
 	public String getLongDescription() {
@@ -61,7 +63,9 @@ public class BashKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider#getShortDescription()
+	 * @see
+	 * com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider#
+	 * getShortDescription()
 	 */
 	@Override
 	public String getShortDescription() {
@@ -71,7 +75,9 @@ public class BashKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider#getImageDescriptor()
+	 * @see
+	 * com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider#
+	 * getImageDescriptor()
 	 */
 	@Override
 	public ImageDescriptor getImageDescriptor() {
@@ -101,17 +107,4 @@ public class BashKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		// TODO Auto-generated method stub
 
 	}
-
-	@Override
-	public Collection<String> getSupportedExportModes() {
-		// TODO Auto-generated method stub
-		return Collections.emptyList();
-	}
-
-	@Override
-	public void setExportMode(String exportMode) {
-		// TODO Auto-generated method stub
-
-	}
-
 }
