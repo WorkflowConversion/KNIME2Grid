@@ -51,19 +51,15 @@ import com.workflowconversion.knime2grid.format.ExtensionFilter;
 /**
  * Class based on {@link WorkflowExportWizard}.
  * 
- * The main difference is that this page opens a single-selection dialog and
- * does not display a tree viewer.
+ * The main difference is that this page opens a single-selection dialog and does not display a tree viewer.
  * 
  * @author Luis de la Garza
  */
 public class WorkflowExportPage extends WizardPage {
-	/**
-	 * 
-	 */
 	private static final int HORIZONTAL_SPACING = 9;
 	private final ArrayList<KnimeWorkflowExporter> exporters;
-	private int selectedIndex;
-	private String destinationFilePath;
+	private volatile int selectedIndex;
+	private volatile String destinationFilePath;
 
 	/**
 	 * @param pageName
@@ -78,8 +74,7 @@ public class WorkflowExportPage extends WizardPage {
 	}
 
 	/**
-	 * Gets the selected exporter. If no exporter has been selected yet, an
-	 * IllegalStateException will be thrown!
+	 * Gets the selected exporter. If no exporter has been selected yet, an IllegalStateException will be thrown!
 	 * 
 	 * @return The selected exporter.
 	 */
@@ -110,8 +105,7 @@ public class WorkflowExportPage extends WizardPage {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see org.eclipse.jface.dialogs.IDialogPage#createControl(org.eclipse.swt.
-	 * widgets .Composite)
+	 * @see org.eclipse.jface.dialogs.IDialogPage#createControl(org.eclipse.swt. widgets .Composite)
 	 */
 	@Override
 	public void createControl(final Composite parent) {
@@ -177,9 +171,7 @@ public class WorkflowExportPage extends WizardPage {
 					if (selectedIndex > -1) {
 						final KnimeWorkflowExporter selectedExporter = exporters.get(selectedIndex);
 						// change the image and the description
-						final Image scaledPic = ImageDescriptor
-								.createFromImageData(
-										selectedExporter.getImageDescriptor().getImageData().scaledTo(150, 150))
+						final Image scaledPic = ImageDescriptor.createFromImageData(selectedExporter.getImageDescriptor().getImageData().scaledTo(150, 150))
 								.createImage();
 						image.setImage(scaledPic);
 						description.setText(selectedExporter.getLongDescription());

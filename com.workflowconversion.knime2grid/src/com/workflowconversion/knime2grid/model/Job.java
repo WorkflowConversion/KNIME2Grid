@@ -24,18 +24,18 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.commons.lang.Validate;
 import org.knime.core.node.workflow.NodeID;
 
 import com.genericworkflownodes.knime.commandline.CommandLineElement;
+import com.workflowconversion.knime2grid.resource.Application;
 
 /**
- * This a simple object that contains all information related to a single job. Not all of the fields will be known at
- * instantiation, so as the conversion advances, different fields will be populated (e.g., fields such as {@link #x} or
- * {@link #y} depend on the target platform).
+ * This a simple object that contains all information related to a single job. Not all of the fields will be known at instantiation, so as the conversion
+ * advances, different fields will be populated (e.g., fields such as {@link #x} or {@link #y} depend on the target platform).
  * 
- * It's worth noting that instances of this class don't <i>know</i> how to generate the command line needed to execute
- * them, rather, this is set by an external process, due to the fact that the command line depends on the type of Job
- * (i.e., if this is a GKN job, it'll look different than a KNIME job).
+ * It's worth noting that instances of this class don't <i>know</i> how to generate the command line needed to execute them, rather, this is set by an external
+ * process, due to the fact that the command line depends on the type of Job (i.e., if this is a GKN job, it'll look different than a KNIME job).
  * 
  * @author Luis de la Garza
  */
@@ -67,6 +67,9 @@ public class Job implements GraphicElement {
 	// path, executableName and commandLine
 	private Collection<CommandLineElement> commandLine;
 
+	// remote application that has been associated to this job, if any
+	private Application remoteApplication;
+
 	private boolean ignored = false;
 
 	public Job() {
@@ -79,7 +82,7 @@ public class Job implements GraphicElement {
 		this.outputsByOriginalPortNr = new TreeMap<Integer, Output>();
 
 		this.params = new TreeMap<String, String>();
-		
+
 		this.commandLine = Collections.<CommandLineElement>emptyList();
 	}
 
@@ -125,8 +128,7 @@ public class Job implements GraphicElement {
 		}
 		input.setPortNr(portNr);
 		if (inputsByOriginalPortNr.put(input.getOriginalPortNr(), input) != null) {
-			throw new InvalidParameterException(
-					"This job already has an input with the original port number: " + input.getOriginalPortNr());
+			throw new InvalidParameterException("This job already has an input with the original port number: " + input.getOriginalPortNr());
 		}
 	}
 
@@ -164,8 +166,7 @@ public class Job implements GraphicElement {
 		}
 		output.setPortNr(portNr);
 		if (outputsByOriginalPortNr.put(output.getOriginalPortNr(), output) != null) {
-			throw new InvalidParameterException(
-					"This job already has an input with the original port number: " + output.getOriginalPortNr());
+			throw new InvalidParameterException("This job already has an input with the original port number: " + output.getOriginalPortNr());
 		}
 	}
 
@@ -251,6 +252,19 @@ public class Job implements GraphicElement {
 
 	public void addParameter(final String key, final String value) {
 		this.params.put(key, value);
+	}
+
+	public void setRemoteApplication(final Application remoteApplication) {
+		Validate.notNull(remoteApplication, "remoteApplication cannot be null");
+		this.remoteApplication = remoteApplication;
+	}
+
+	public void clearRemoteApplication() {
+		this.remoteApplication = null;
+	}
+
+	public Application getRemoteApplication() {
+		return remoteApplication;
 	}
 
 	/*

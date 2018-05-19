@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="http://www.knime.org/2008/09/XMLConfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.knime.org/2008/09/XMLConfig http://www.knime.org/XMLConfig_2008_09.xsd" key="settings.xml">
+<entry key="node_file" type="xstring" value="settings.xml"/>
+<config key="flow_stack"/>
+<config key="internal_node_subsettings">
+<entry key="memory_policy" type="xstring" value="CacheSmallInMemory"/>
+</config>
+<config key="model">
+<entry key="url" type="xstring" value="/Users/delagarza/Downloads/tests/input.csv"/>
+<entry key="colDelimiter" type="xstring" value=","/>
+<entry key="rowDelimiter" type="xstring" value="%%00010"/>
+<entry key="quote" type="xstring" value="&quot;"/>
+<entry key="commentStart" type="xstring" value="#"/>
+<entry key="hasRowHeader" type="xboolean" value="false"/>
+<entry key="hasColHeader" type="xboolean" value="true"/>
+<entry key="supportShortLines" type="xboolean" value="false"/>
+<entry key="limitRowsCount" type="xlong" value="-1"/>
+<entry key="skipFirstLinesCount" type="xint" value="-1"/>
+<entry key="characterSetName" type="xstring" isnull="true" value=""/>
+<entry key="limitAnalysisCount" type="xint" value="-1"/>
+</config>
+<entry key="customDescription" type="xstring" isnull="true" value=""/>
+<entry key="state" type="xstring" value="EXECUTED"/>
+<entry key="factory" type="xstring" value="org.knime.base.node.io.csvreader.CSVReaderNodeFactory"/>
+<entry key="node-name" type="xstring" value="CSV Reader"/>
+<entry key="node-bundle-name" type="xstring" value="KNIME Base Nodes"/>
+<entry key="node-bundle-symbolic-name" type="xstring" value="org.knime.base"/>
+<entry key="node-bundle-vendor" type="xstring" value="KNIME AG, Zurich, Switzerland"/>
+<entry key="node-bundle-version" type="xstring" value="3.5.3.v201804041546"/>
+<entry key="node-feature-name" type="xstring" isnull="true" value=""/>
+<entry key="node-feature-symbolic-name" type="xstring" isnull="true" value=""/>
+<entry key="node-feature-vendor" type="xstring" isnull="true" value=""/>
+<entry key="node-feature-version" type="xstring" value="0.0.0"/>
+<config key="factory_settings"/>
+<entry key="name" type="xstring" value="CSV Reader"/>
+<entry key="hasContent" type="xboolean" value="true"/>
+<entry key="isInactive" type="xboolean" value="false"/>
+<config key="ports">
+<config key="port_1">
+<entry key="index" type="xint" value="1"/>
+<entry key="port_spec_class" type="xstring" value="org.knime.core.data.DataTableSpec"/>
+<entry key="port_object_class" type="xstring" value="org.knime.core.node.BufferedDataTable"/>
+<entry key="port_object_summary" type="xstring" value="Rows: 7, Cols: 2"/>
+<entry key="port_dir_location" type="xstring" value="port_1"/>
+</config>
+</config>
+<config key="filestores">
+<entry key="file_store_location" type="xstring" isnull="true" value=""/>
+<entry key="file_store_id" type="xstring" value="5ec5e1e9-2963-45c7-b31a-96e3a0e90751"/>
+</config>
+</config>
