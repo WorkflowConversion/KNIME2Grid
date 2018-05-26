@@ -29,6 +29,7 @@ import org.knime.core.node.workflow.NodeID;
 
 import com.genericworkflownodes.knime.commandline.CommandLineElement;
 import com.workflowconversion.knime2grid.resource.Application;
+import com.workflowconversion.knime2grid.resource.Queue;
 
 /**
  * This a simple object that contains all information related to a single job. Not all of the fields will be known at instantiation, so as the conversion
@@ -67,8 +68,9 @@ public class Job implements GraphicElement {
 	// path, executableName and commandLine
 	private Collection<CommandLineElement> commandLine;
 
-	// remote application that has been associated to this job, if any
+	// remote application and queue that have been associated to this job, if any
 	private Application remoteApplication;
+	private Queue remoteQueue;
 
 	private boolean ignored = false;
 
@@ -267,14 +269,23 @@ public class Job implements GraphicElement {
 		return remoteApplication;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Object#toString()
-	 */
+	public void setRemoteQueue(final Queue remoteQueue) {
+		Validate.notNull(remoteQueue, "remoteQueue cannot be null");
+		this.remoteQueue = remoteQueue;
+	}
+
+	public void clearRemoteQueue() {
+		this.remoteQueue = null;
+	}
+
+	public Queue getRemoteQueue() {
+		return remoteQueue;
+	}
+
 	@Override
 	public String toString() {
-		return "Job [id=" + id + ", name=" + name + ", description=" + description + "]";
+		return "Job [id=" + id + ", name=" + name + ", description=" + description + ", remoteApplication=" + remoteApplication + ", remoteQueue=" + remoteQueue
+				+ "]";
 	}
 
 }

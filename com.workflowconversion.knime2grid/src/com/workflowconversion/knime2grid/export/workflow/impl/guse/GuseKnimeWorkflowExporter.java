@@ -84,9 +84,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider
-	 * #getId ()
+	 * @see com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider #getId ()
 	 */
 	@Override
 	public String getId() {
@@ -96,33 +94,27 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider#
-	 * getLongDescription()
+	 * @see com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider# getLongDescription()
 	 */
 	@Override
 	public String getLongDescription() {
-		return "Converts KNIME workflows in a format understood by gUse/WS-PGRADE managed grids.";
+		return "Converts KNIME workflows in a format compatible with gUSE/WS-PGRADE.";
 	}
 
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider#
-	 * getShortDescription()
+	 * @see com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider# getShortDescription()
 	 */
 	@Override
 	public String getShortDescription() {
-		return "gUse / WS-PGRADE";
+		return "gUSE / WS-PGRADE";
 	}
 
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * com.workflowconversion.knime2grid.export.KnimeWorkflowExporter#export(org
-	 * .knime.core.node.workflow.WorkflowManager, java.io.File)
+	 * @see com.workflowconversion.knime2grid.export.KnimeWorkflowExporter#export(org .knime.core.node.workflow.WorkflowManager, java.io.File)
 	 */
 	// the structure of a gUSE archive is as follows:
 	// workflow.zip
@@ -206,7 +198,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		final ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(destination));
 		// first the workflow descriptor
 		writeWorkflowDescriptor(workflow, zipOutputStream);
-		// writeWorkflowData(workflow, zipOutputStream);
+		writeWorkflowData(workflow, zipOutputStream);
 		zipOutputStream.close();
 	}
 
@@ -219,32 +211,25 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		zipOutputStream.closeEntry();
 	}
 
-	private void writeWorkflowData(final Workflow workflow, final ZipOutputStream zipOutputStream)
-			throws IOException, TransformerException {
+	private void writeWorkflowData(final Workflow workflow, final ZipOutputStream zipOutputStream) throws IOException, TransformerException {
 		// add a folder named after the workflow
 		final String rootEntryName = workflow.getName() + '/';
 		zipOutputStream.putNextEntry(new ZipEntry(rootEntryName));
-		// add a folder for each job
 		for (final Job job : workflow.getJobs()) {
 			writeJob(rootEntryName, zipOutputStream, job);
 		}
 		zipOutputStream.closeEntry();
 	}
 
-	private void writeJob(final String rootEntryName, final ZipOutputStream zipOutputStream, final Job job)
-			throws IOException {
+	private void writeJob(final String rootEntryName, final ZipOutputStream zipOutputStream, final Job job) throws IOException {
 		final String jobEntryName = rootEntryName + job.getName() + '/';
 		zipOutputStream.putNextEntry(new ZipEntry(jobEntryName));
-		// we don't generate execute.bin because the binaries are already
-		// present on the server
-		// and we only need to produce the command line that will be passed to
-		// the binary.
+		// TODO: generate execute.bin
 		writeInputs(jobEntryName, zipOutputStream, job);
 		zipOutputStream.closeEntry();
 	}
 
-	private void writeInputs(final String rootEntryName, final ZipOutputStream zipOutputStream, final Job job)
-			throws IOException {
+	private void writeInputs(final String rootEntryName, final ZipOutputStream zipOutputStream, final Job job) throws IOException {
 		final String inputsFolderName = rootEntryName + "inputs/";
 		zipOutputStream.putNextEntry(new ZipEntry(inputsFolderName));
 		for (final Input input : job.getInputs()) {
@@ -276,8 +261,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	 * @throws ParserConfigurationException
 	 * @throws TransformerException
 	 */
-	private void generateWorkflowXml(final Workflow workflow, final StringBuilder builder)
-			throws ParserConfigurationException, TransformerException {
+	private void generateWorkflowXml(final Workflow workflow, final StringBuilder builder) throws ParserConfigurationException, TransformerException {
 		final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 		final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 		final Document document = documentBuilder.newDocument();
@@ -368,8 +352,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 				final Element outputElement = document.createElement("output");
 				jobElement.appendChild(outputElement);
 				outputElement.setAttribute("name", output.getName());
-				outputElement.setAttribute("seq",
-						Integer.toString(i - ignoredOutputsSoFar + (job.getNrInputs() - totalIgnoredInputs)));
+				outputElement.setAttribute("seq", Integer.toString(i - ignoredOutputsSoFar + (job.getNrInputs() - totalIgnoredInputs)));
 				outputElement.setAttribute("text", "Description of Port");
 				outputElement.setAttribute("x", Integer.toString(output.getX()));
 				outputElement.setAttribute("y", Integer.toString(output.getY()));
@@ -418,8 +401,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 				inputElement.setAttribute("x", Integer.toString(input.getX()));
 				inputElement.setAttribute("y", Integer.toString(input.getY()));
 
-				addConcretePortProperty(inputElement, "eparam",
-						input.getConnectionType() == ConnectionType.Collector ? "1" : "0");
+				addConcretePortProperty(inputElement, "eparam", input.getConnectionType() == ConnectionType.Collector ? "1" : "0");
 				final String waiting = input.getConnectionType() == ConnectionType.Collector ? "all" : "one";
 				addConcretePortProperty(inputElement, "waitingtmp", waiting);
 				addConcretePortProperty(inputElement, "waiting", waiting);
@@ -583,17 +565,11 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	// }
 	// }
 	/*
-	 * private void addMiddlewareSpecificProperties(final StringBuilder builder)
-	 * { if ("moab".equals(exportMode)) { addExecutionProperty(builder,
-	 * "gridtype", "moab"); addExecutionProperty(builder, "resource",
-	 * "hpc-uni"); addExecutionProperty(builder, "grid",
-	 * "hpc-bw.uni-tuebingen.de"); } else if ("UNICORE".equals(exportMode)) {
-	 * addExecutionProperty(builder, "gridtype", "unicore");
-	 * addExecutionProperty(builder, "resource",
-	 * "flavus.informatik.uni-tuebingen.de:8090"); addExecutionProperty(builder,
-	 * "grid", "flavus.informatik.uni-tuebingen.de:8090");
-	 * addDescriptionProperty(builder, "unicore.keyWalltime", "30");
-	 * addDescriptionProperty(builder, "unicore.keyMemory", "2000"); } }
+	 * private void addMiddlewareSpecificProperties(final StringBuilder builder) { if ("moab".equals(exportMode)) { addExecutionProperty(builder, "gridtype",
+	 * "moab"); addExecutionProperty(builder, "resource", "hpc-uni"); addExecutionProperty(builder, "grid", "hpc-bw.uni-tuebingen.de"); } else if
+	 * ("UNICORE".equals(exportMode)) { addExecutionProperty(builder, "gridtype", "unicore"); addExecutionProperty(builder, "resource",
+	 * "flavus.informatik.uni-tuebingen.de:8090"); addExecutionProperty(builder, "grid", "flavus.informatik.uni-tuebingen.de:8090");
+	 * addDescriptionProperty(builder, "unicore.keyWalltime", "30"); addDescriptionProperty(builder, "unicore.keyMemory", "2000"); } }
 	 */
 	private boolean ignoreInput(final Input input) {
 		// ignore unconnected inputs
@@ -638,9 +614,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider#
-	 * getImageDescriptor()
+	 * @see com.workflowconversion.knime2grid.export.ui.DisplayInformationProvider# getImageDescriptor()
 	 */
 	@Override
 	public ImageDescriptor getImageDescriptor() {
@@ -650,8 +624,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.workflowconversion.knime2grid.export.ui.ExtensionFilterProvider#
-	 * getExtensionFilters()
+	 * @see com.workflowconversion.knime2grid.export.ui.ExtensionFilterProvider# getExtensionFilters()
 	 */
 	@Override
 	public Collection<ExtensionFilter> getExtensionFilters() {

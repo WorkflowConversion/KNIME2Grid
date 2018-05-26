@@ -5,8 +5,8 @@ import java.io.FileOutputStream;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
@@ -35,6 +35,7 @@ import org.knime.workbench.core.util.ImageRepository.SharedImages;
 import com.workflowconversion.knime2grid.model.Job;
 import com.workflowconversion.knime2grid.model.Workflow;
 import com.workflowconversion.knime2grid.resource.Application;
+import com.workflowconversion.knime2grid.resource.Queue;
 import com.workflowconversion.knime2grid.resource.Resource;
 import com.workflowconversion.knime2grid.resource.ResourceProvider;
 import com.workflowconversion.knime2grid.resource.impl.XMLBasedResourceProvider;
@@ -44,7 +45,14 @@ public class ApplicationSelectionPage extends WizardPage {
 
 	private static final NodeLogger LOG = NodeLogger.getLogger(ApplicationSelectionPage.class);
 
-	private final Collection<Application> currentRemoteApplications;
+	private static final int LOCAL_JOB_COLUMN_INDEX = 0;
+	private static final int REMOTE_APPLICATION_COLUMN_INDEX = 1;
+	private static final int REMOTE_QUEUE_COLUMN_INDEX = 2;
+	private static final String SELECTED_REMOTE_RESOURCE_KEY = "remoteresource";
+	private static final String REMOTE_APPLICATION_COMBO_KEY = "appcombo";
+	private static final String REMOTE_QUEUE_COMBO_KEY = "queuecombo";
+
+	private final ArrayList<Application> currentRemoteApplications;
 	private final Job[] localJobs;
 
 	/**
@@ -56,7 +64,7 @@ public class ApplicationSelectionPage extends WizardPage {
 		Validate.notNull(workflow, "workflow is required and cannot be null");
 
 		this.localJobs = workflow.getJobs().toArray(new Job[] {});
-		currentRemoteApplications = new LinkedList<Application>();
+		currentRemoteApplications = new ArrayList<Application>();
 	}
 
 	@Override
@@ -106,13 +114,14 @@ public class ApplicationSelectionPage extends WizardPage {
 		nodesTableGroup.setLayout(nodesTableGroupLayout);
 		nodesTableGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
-		final Table localToRemoteTable = new Table(nodesTableGroup, SWT.BORDER | SWT.H_SCROLL);
+		final Table localToRemoteTable = new Table(nodesTableGroup, SWT.BORDER | SWT.V_SCROLL | SWT.MULTI);
 		localToRemoteTable.setHeaderVisible(true);
-		final String[] columnTitles = { "Local KNIME Node", "Remote Resource" };
+		final String[] columnTitles = { "Local KNIME Node", "Remote Application", "Queue" };
+		final int[] columnWidths = { 250, 350, 250 };
 		for (int i = 0; i < columnTitles.length; i++) {
-			TableColumn column = new TableColumn(localToRemoteTable, SWT.NULL);
+			TableColumn column = new TableColumn(localToRemoteTable, SWT.NONE);
 			column.setText(columnTitles[i]);
-			column.setWidth(350);
+			column.setWidth(columnWidths[i]);
 		}
 
 		final Button applyButton = new Button(nodesTableGroup, SWT.PUSH);
@@ -122,17 +131,54 @@ public class ApplicationSelectionPage extends WizardPage {
 		// populate the table
 		for (final Job job : localJobs) {
 			final TableItem row = new TableItem(localToRemoteTable, SWT.NONE);
-			row.setText(0, String.format("%s (id: %s)", job.getName(), job.getId().toString()));
+			row.setText(LOCAL_JOB_COLUMN_INDEX, String.format("%s (id: %s)", job.getName(), job.getId().toString()));
 		}
 		final TableItem[] tableItems = localToRemoteTable.getItems();
 		for (int i = 0; i < tableItems.length; i++) {
-			final TableEditor comboEditor = new TableEditor(localToRemoteTable);
-			final CCombo combo = new CCombo(localToRemoteTable, SWT.NONE);
-			combo.setText("Selecte a remote application");
+			TableEditor comboEditor = new TableEditor(localToRemoteTable);
+			final CCombo remoteApplicationCombo = new CCombo(localToRemoteTable, SWT.NONE);
+			remoteApplicationCombo.setEditable(false);
+			remoteApplicationCombo.setText("Remote application");
 			comboEditor.horizontalAlignment = SWT.LEFT;
 			comboEditor.grabHorizontal = true;
-			comboEditor.setEditor(combo, tableItems[i], 1);
-			tableItems[i].setData("combo", combo);
+			comboEditor.setEditor(remoteApplicationCombo, tableItems[i], REMOTE_APPLICATION_COLUMN_INDEX);
+			tableItems[i].setData(REMOTE_APPLICATION_COMBO_KEY, remoteApplicationCombo);
+
+			comboEditor = new TableEditor(localToRemoteTable);
+			final CCombo remoteQueueCombo = new CCombo(localToRemoteTable, SWT.NONE);
+			remoteQueueCombo.setEditable(false);
+			remoteQueueCombo.setText("Remote queue");
+			comboEditor.horizontalAlignment = SWT.LEFT;
+			comboEditor.grabHorizontal = true;
+			comboEditor.setEditor(remoteQueueCombo, tableItems[i], REMOTE_QUEUE_COLUMN_INDEX);
+			tableItems[i].setData(REMOTE_QUEUE_COMBO_KEY, remoteQueueCombo);
+
+			final int itemIndex = i;
+			remoteApplicationCombo.addSelectionListener(new CustomSelectionListener() {
+				@Override
+				public void widgetSelected(final SelectionEvent e) {
+					if (e.getSource() == remoteApplicationCombo) {
+						final int selectedIndex = remoteApplicationCombo.getSelectionIndex();
+						if (selectedIndex >= 0) {
+							final Application selectedRemoteApplication = currentRemoteApplications.get(selectedIndex);
+							final Resource selectedRemoteResource = selectedRemoteApplication.getOwningResource();
+							final Resource previouslySelectedRemoteResource = (Resource) tableItems[itemIndex].getData(SELECTED_REMOTE_RESOURCE_KEY);
+							if (previouslySelectedRemoteResource != selectedRemoteResource) {
+								// app from a different cluster was selected, we need to update queues
+								remoteQueueCombo.removeAll();
+								remoteQueueCombo.setText("Remote queue");
+								for (final Queue queue : selectedRemoteResource.getQueues()) {
+									remoteQueueCombo.add(String.format("%s (%s)", queue.getName(), selectedRemoteResource.getName()));
+								}
+
+								tableItems[itemIndex].setData(SELECTED_REMOTE_RESOURCE_KEY, selectedRemoteResource);
+							}
+						}
+					}
+
+				}
+			});
+
 		}
 
 		// bind UI controls to actions
@@ -189,7 +235,7 @@ public class ApplicationSelectionPage extends WizardPage {
 						}
 						final ResourceProvider resourceProvider = new XMLBasedResourceProvider(resourcesFile);
 						resourceProvider.init();
-						refreshRemoteApplicationsList(resourceProvider.getResources());
+						refreshRemoteResources(resourceProvider.getResources());
 						success = true;
 					} catch (Exception ex) {
 						LOG.error("Could not load resources file.", ex);
@@ -201,14 +247,17 @@ public class ApplicationSelectionPage extends WizardPage {
 						for (int i = 0; i < tableItems.length; i++) {
 							localJobs[i].clearRemoteApplication();
 							final TableItem row = tableItems[i];
-							final CCombo combo = (CCombo) row.getData("combo");
+							row.setData(SELECTED_REMOTE_RESOURCE_KEY, null);
+							CCombo combo = (CCombo) row.getData(REMOTE_APPLICATION_COMBO_KEY);
 							combo.removeAll();
-							combo.setText("Select a remote application");
+							combo.setText("Remote application");
 							for (final Application application : currentRemoteApplications) {
 								combo.add(String.format("%s, version %s (%s)", application.getName(), application.getVersion(),
 										application.getOwningResource().getName()));
 
 							}
+							combo = (CCombo) row.getData(REMOTE_QUEUE_COMBO_KEY);
+							combo.removeAll();
 						}
 					}
 				}
@@ -220,13 +269,19 @@ public class ApplicationSelectionPage extends WizardPage {
 			public void widgetSelected(SelectionEvent e) {
 				if (e.getSource() == applyButton) {
 					LOG.info("Saving selected remote applications");
-					final Application[] remoteApplications = currentRemoteApplications.toArray(new Application[] {});
 					for (int i = 0; i < tableItems.length; i++) {
-						final CCombo combo = (CCombo) tableItems[i].getData("combo");
-						final int selectedIndex = combo.getSelectionIndex();
-						// user selected something
-						if (selectedIndex >= 0) {
-							localJobs[i].setRemoteApplication(remoteApplications[i]);
+						final CCombo remoteApplicationCombo = (CCombo) tableItems[i].getData(REMOTE_APPLICATION_COMBO_KEY);
+						final int selectedRemoteApplicationIndex = remoteApplicationCombo.getSelectionIndex();
+						if (selectedRemoteApplicationIndex >= 0) {
+							final Application selectedRemoteApplication = currentRemoteApplications.get(selectedRemoteApplicationIndex);
+							localJobs[i].setRemoteApplication(selectedRemoteApplication);
+
+							final CCombo remoteQueuesCombo = (CCombo) tableItems[i].getData(REMOTE_QUEUE_COMBO_KEY);
+							final int selectedRemoteQueueIndex = remoteQueuesCombo.getSelectionIndex();
+							if (selectedRemoteQueueIndex >= 0) {
+								final Queue[] availableRemoteQueues = selectedRemoteApplication.getOwningResource().getQueues().toArray(new Queue[] {});
+								localJobs[i].setRemoteQueue(availableRemoteQueues[selectedRemoteQueueIndex]);
+							}
 						}
 					}
 				}
@@ -239,7 +294,7 @@ public class ApplicationSelectionPage extends WizardPage {
 		setControl(container);
 	}
 
-	private void refreshRemoteApplicationsList(final Collection<Resource> remoteResources) {
+	private void refreshRemoteResources(final Collection<Resource> remoteResources) {
 		// "flatten" the incoming resources structure to a list of apps
 		currentRemoteApplications.clear();
 		for (final Resource resource : remoteResources) {
