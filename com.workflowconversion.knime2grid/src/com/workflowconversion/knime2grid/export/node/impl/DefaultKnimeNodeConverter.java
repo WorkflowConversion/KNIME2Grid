@@ -37,6 +37,7 @@ import org.knime.core.node.workflow.WorkflowEvent;
 import org.knime.core.node.workflow.WorkflowListener;
 import org.knime.core.node.workflow.WorkflowManager;
 import org.knime.core.util.FileUtil;
+import org.knime.core.util.VMFileLocker;
 
 import com.genericworkflownodes.knime.commandline.CommandLineElement;
 import com.genericworkflownodes.knime.commandline.impl.CommandLineFile;
@@ -110,9 +111,9 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 		// sub-wfs
 		final Path sandboxDir = workingDirectory.toPath();
 
-		final Path miniWorkflowDir = Files.createTempDirectory(sandboxDir, "miniwf");
+		final File miniWorkflowDir = Files.createTempDirectory(sandboxDir, "miniwf").toFile();
 		final WorkflowCreationHelper creationHelper = new WorkflowCreationHelper();
-		creationHelper.setWorkflowContext(new WorkflowContext.Factory(miniWorkflowDir.toFile()).createContext());
+		creationHelper.setWorkflowContext(new WorkflowContext.Factory(miniWorkflowDir).createContext());
 		final WorkflowManager miniWorkflowManager = WORKFLOW_MANAGER
 				.createAndAddProject("Mini Workflow for " + nativeNodeContainer.getNameWithID(), creationHelper);
 		// copy and paste this node into the mini workflow
@@ -269,21 +270,26 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 			}
 		}
 
-		// we went through all of the inputs/outpus and added needed nodes to
-		// provide/extract data,
-		// we can now save the mini workflow
-		miniWorkflowManager.save(miniWorkflowDir.toFile(), new ExecutionMonitor(), true);
+		// we went through all of the inputs/outpus and added needed nodes to provide/extract data, we can now save the mini workflow
+		while (VMFileLocker.isLockedForVM(miniWorkflowDir)) {
+			VMFileLocker.unlockForVM(miniWorkflowDir);
+		}
+		miniWorkflowManager.save(miniWorkflowDir, new ExecutionMonitor(), true);
+		// make sure there is no file lock for this folder
+		while (VMFileLocker.isLockedForVM(miniWorkflowDir)) {
+			VMFileLocker.unlockForVM(miniWorkflowDir);
+		}
 
 		// compress the workflow folder into a zip file
-		final Path miniWorkflowArchive = Files.createTempFile(sandboxDir,
-				"knimejob_" + nativeNodeContainer.getID().toString(), ".zip");
-		FileUtil.zipDir(miniWorkflowArchive.toFile(), miniWorkflowDir.toFile(), 9);
-		commandLineElements.add(new CommandLineKNIMEWorkflowFile(miniWorkflowArchive.toFile()));
+		final File miniWorkflowArchive = Files.createTempFile(sandboxDir,
+				"knimejob_" + ConverterUtils.fixNodeIdForFileSystem(nativeNodeContainer.getID().toString()), ".zip").toFile();
+		FileUtil.zipDir(miniWorkflowArchive, miniWorkflowDir, 9);
+		commandLineElements.add(new CommandLineKNIMEWorkflowFile(miniWorkflowArchive));
 		// add the zipped workflow as input
 		final Input input = new Input();
 		input.setName("knime-workflow-zip");
 		input.setConnectionType(ConnectionType.UserProvided);
-		input.setData(new FileParameter("knimewf", miniWorkflowArchive.toFile().getCanonicalPath()));
+		input.setData(new FileParameter("knimewf", miniWorkflowArchive.getCanonicalPath()));
 		job.addInput(input);
 		job.setCommandLine(commandLineElements);
 

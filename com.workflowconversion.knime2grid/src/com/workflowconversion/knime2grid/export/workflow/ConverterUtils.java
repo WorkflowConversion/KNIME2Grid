@@ -222,5 +222,14 @@ public class ConverterUtils {
 	public static String generateFileNameForExport(final String portName, final String extension, final int index) {
 		return portName + '/' + portName + '_' + index + '.' + extension;
 	}
+	
+	/**
+	 * Nodes contain IDs that might not be suitable for filesystems
+	 * @param nodeId The id of a node.
+	 * @return a String that can be used to name a file/folder.
+	 */
+	public static String fixNodeIdForFileSystem(final String nodeId) {
+		return nodeId.replace(":", "-");
+	}
 
 }

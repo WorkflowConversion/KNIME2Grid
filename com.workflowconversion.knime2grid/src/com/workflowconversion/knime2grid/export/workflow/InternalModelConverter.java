@@ -109,7 +109,7 @@ public class InternalModelConverter {
 			if (nc instanceof NativeNodeContainer) {
 				final NativeNodeContainer nativeNodeContainer = (NativeNodeContainer) nc;
 				final File workingDirectory = Files
-						.createTempDirectory("knime2guse_" + nativeNodeContainer.getID().toString()).toFile();
+						.createTempDirectory("knime2guse_" + ConverterUtils.fixNodeIdForFileSystem(nativeNodeContainer.getID().toString())).toFile();
 				if (isProcessingNode(nativeNodeContainer)) {
 					// go through all registered handlers
 					Job convertedJob = null;
