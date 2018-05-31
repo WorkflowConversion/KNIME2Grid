@@ -61,25 +61,13 @@ import com.workflowconversion.knime2grid.model.Output;
 import com.workflowconversion.knime2grid.model.Workflow;
 
 /**
- * Exports to gUse/WS-PGRADE grids.
+ * Exports KNIME workflows to WS-PGRADE format.
  * 
  * @author Luis de la Garza
  */
 public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 
 	private final static NodeLogger LOGGER = NodeLogger.getLogger(GuseKnimeWorkflowExporter.class);
-
-	private static final String ATTRIBUTE_VALUE = "value";
-	private static final String ATTRIBUTE_KEY = "key";
-	private static final String NODE_JOB_DESCRIPTION = "description";
-	private static final String NODE_JOB_EXECUTE = "execute";
-	private static final String ATTRIBUTE_JOB_NAME = "name";
-	private static final String PROPERTY_CURRENT_PARAMETERS = "params";
-	private static final String PROPERTY_PREFIX = "workflowconversion.";
-	private static final String PROPERTY_APP_NAME = PROPERTY_PREFIX + "appName";
-	private static final String PROPERTY_APP_VERSION = PROPERTY_PREFIX + "appVersion";
-	private static final String PROPERTY_ORIGINAL_PARAMETERS = PROPERTY_PREFIX + PROPERTY_CURRENT_PARAMETERS;
-	private final static String WORKFLOW_ID_FORMAT = "yyyy_MM_dd_hh_mm_ss_SSS";
 
 	/*
 	 * (non-Javadoc)
@@ -469,7 +457,8 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 
 	// remove any weird characters not allowed in job names
 	private void fixJobName(final Job job) {
-		// guse does not allow job names with spaces among other things
+		// guse does not allow job names with spaces
+		// TODO: check which other restrictions job names have
 		final String name = job.getName();
 		if (name.indexOf(' ') >= 0) {
 			job.setName(name.replace(" ", ""));
@@ -490,15 +479,13 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		}
 	}
 
-	// gUSE doesn't support lists of files, we will use a custom script for such
-	// jobs
+	// TODO: gUSE doesn't support lists of files, we should use a custom script for such jobs
 	private void fixFileLists(final Job job) {
 
 	}
 
 	// // if job is a generator job, we will:
-	// // 1. move connection from the source of its input port to the input port
-	// of the target of its output
+	// // 1. move connection from the source of its input port to the input port of the target of its output
 	// port
 	// // 2. don't add the generator job to the workflow
 	// if (job.getJobType() == Job.JobType.Generator) {

@@ -1,8 +1,12 @@
 package com.workflowconversion.knime2grid.export.node.impl;
 
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -174,16 +178,24 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 
 	private File dumpConfiguration(final INodeConfiguration nodeConfiguration) throws IOException {
 		final File ctdFile = File.createTempFile("ctdfile", ".ctd");
-		final CTDConfigurationWriter writer = new CTDConfigurationWriter(ctdFile);
-		writer.write(nodeConfiguration);
+		final CTDConfigurationWriter ctdWriter = new CTDConfigurationWriter(ctdFile);
+		ctdWriter.setIgnoreUnusedParameters(false);
+		ctdWriter.write(nodeConfiguration);
 		return ctdFile;
 	}
 
 	private INodeConfiguration cloneNodeConfiguration(final INodeConfiguration nodeConfiguration)
 			throws InvalidCTDFileException, IOException {
-		final File ctdFile = dumpConfiguration(nodeConfiguration);
+		final StringWriter stringWriter = new StringWriter();
+		final BufferedWriter bufferedWriter = new BufferedWriter(stringWriter);
+		final CTDConfigurationWriter ctdWriter = new CTDConfigurationWriter(bufferedWriter);
+		ctdWriter.setIgnoreUnusedParameters(false);
+		ctdWriter.write(nodeConfiguration);
+		
 		final CTDConfigurationReader reader = new CTDConfigurationReader();
-		return reader.read(new FileInputStream(ctdFile));
+		// no need to close byte array input streams
+		final InputStream inputStream = new ByteArrayInputStream(stringWriter.getBuffer().toString().getBytes(StandardCharsets.UTF_8));
+		return reader.read(inputStream);
 	}
 
 	// the inputs/outputs of the original CTD contain absolute filenames... this method will "fix" those
