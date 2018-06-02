@@ -39,8 +39,8 @@ import com.workflowconversion.knime2grid.ui.wizard.WorkflowExportWizard;
 public class ConvertWorkflowHandler extends AbstractHandler {
 
 	private static final NodeLogger LOG = NodeLogger.getLogger(ConvertWorkflowHandler.class);
-	private static final int SIZING_WIZARD_WIDTH = 470;
-	private static final int SIZING_WIZARD_HEIGHT = 550;
+	private static final int SIZING_WIZARD_WIDTH = 800;
+	private static final int SIZING_WIZARD_HEIGHT = 700;
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {

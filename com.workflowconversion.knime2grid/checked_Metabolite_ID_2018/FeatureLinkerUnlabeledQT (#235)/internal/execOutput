@@ -1,0 +1,24 @@
+File '/Users/delagarza/.OpenMS/OpenMS.ini' is deprecated.
+Updating missing/wrong entries in '/Users/delagarza/.OpenMS/OpenMS.ini' with defaults!
+Progress of 'reading input':
+
+  16.67 %               
+  33.33 %               
+  66.67 %               
+  83.33 %               
+-- done [took 1.86 s (CPU), 4.06 s (Wall)] -- 
+Progress of 'linking features':
+
+  4.61 %               
+  14.44 %               
+  31.28 %               
+-- done [took 1.64 s (CPU), 3.49 s (Wall)] -- 
+Number of consensus features:
+  of size  6:    671
+  of size  5:    121
+  of size  4:    185
+  of size  3:    419
+  of size  2:    553
+  of size  1:   1784
+  total:        3733
+FeatureLinkerUnlabeledQT took 9.51 s (wall), 4.26 s (CPU), 0.08 s (system), 4.18 s (user).

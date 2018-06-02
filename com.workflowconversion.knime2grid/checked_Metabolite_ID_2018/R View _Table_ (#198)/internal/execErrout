@@ -1,0 +1,8 @@
+KernSmooth 2.23 loaded
+Copyright M. P. Wand 1997-2009
+
+Attaching package: 'gplots'
+
+The following object is masked from 'package:stats':
+
+    lowess

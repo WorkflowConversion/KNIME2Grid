@@ -17,6 +17,7 @@ import org.eclipse.swt.custom.CCombo;
 import org.eclipse.swt.custom.TableEditor;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -72,7 +73,6 @@ public class ApplicationSelectionPage extends WizardPage {
 		final Composite container = new Composite(parent, SWT.NULL);
 		final GridLayout containerLayout = new GridLayout(1, false);
 		container.setLayout(containerLayout);
-		container.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
 		// ------- resources.xml location
 		final Group resourcesFileLocationGroup = new Group(container, SWT.NULL);
@@ -108,31 +108,36 @@ public class ApplicationSelectionPage extends WizardPage {
 
 		// ----------- group displaying nodes and remote apps
 		final Group nodesTableGroup = new Group(container, SWT.NULL);
-		final GridLayout nodesTableGroupLayout = new GridLayout(1, false);
 		nodesTableGroup.setText("Match local KNIME Nodes to remote resources");
-		nodesTableGroupLayout.horizontalSpacing = HORIZONTAL_SPACING;
-		nodesTableGroup.setLayout(nodesTableGroupLayout);
-		nodesTableGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		nodesTableGroup.setLayoutData(new GridData(SWT.CENTER, SWT.TOP, true, false));
+		nodesTableGroup.setLayout(new GridLayout(1, false));
 
-		final Table localToRemoteTable = new Table(nodesTableGroup, SWT.BORDER | SWT.V_SCROLL | SWT.MULTI);
+		final Table localToRemoteTable = new Table(nodesTableGroup, SWT.BORDER | SWT.V_SCROLL);
 		localToRemoteTable.setHeaderVisible(true);
+		localToRemoteTable.setLinesVisible(true);
+		localToRemoteTable.setLayout(new FillLayout());
+		final GridData localToRemoteLayoutData = new GridData(SWT.CENTER, SWT.TOP, true, false);
+		localToRemoteLayoutData.heightHint = 200;
+		localToRemoteTable.setLayoutData(localToRemoteLayoutData);
+
 		final String[] columnTitles = { "Local KNIME Node", "Remote Application", "Queue" };
 		final int[] columnWidths = { 250, 350, 250 };
 		for (int i = 0; i < columnTitles.length; i++) {
-			TableColumn column = new TableColumn(localToRemoteTable, SWT.NONE);
+			final TableColumn column = new TableColumn(localToRemoteTable, SWT.NONE);
 			column.setText(columnTitles[i]);
 			column.setWidth(columnWidths[i]);
 		}
 
 		final Button applyButton = new Button(nodesTableGroup, SWT.PUSH);
 		applyButton.setText("Apply");
-		applyButton.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_CENTER));
+		applyButton.setLayoutData(new GridData(SWT.CENTER, SWT.TOP, false, false));
 
 		// populate the table
 		for (final Job job : localJobs) {
 			final TableItem row = new TableItem(localToRemoteTable, SWT.BORDER);
 			row.setText(LOCAL_JOB_COLUMN_INDEX, String.format("%s (id: %s)", job.getName(), job.getId().toString()));
 		}
+
 		final TableItem[] tableItems = localToRemoteTable.getItems();
 		for (int i = 0; i < tableItems.length; i++) {
 			TableEditor comboEditor = new TableEditor(localToRemoteTable);
@@ -291,6 +296,8 @@ public class ApplicationSelectionPage extends WizardPage {
 		// select by default
 		localRadioButton.setSelection(true);
 		localRadioButton.notifyListeners(SWT.Selection, new Event());
+		nodesTableGroup.pack();
+		container.pack();
 		setControl(container);
 	}
 
