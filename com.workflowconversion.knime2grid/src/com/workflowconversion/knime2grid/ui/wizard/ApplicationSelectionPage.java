@@ -134,8 +134,12 @@ public class ApplicationSelectionPage extends WizardPage {
 
 		// populate the table
 		for (final Job job : localJobs) {
-			final TableItem row = new TableItem(localToRemoteTable, SWT.BORDER);
-			row.setText(LOCAL_JOB_COLUMN_INDEX, String.format("%s (id: %s)", job.getName(), job.getId().toString()));
+			// "loop" nodes such as ZipLoopStart/End are not shown because they are not
+			// converted
+			if (job.isAllowConversion()) {
+				final TableItem row = new TableItem(localToRemoteTable, SWT.BORDER);
+				row.setText(LOCAL_JOB_COLUMN_INDEX, String.format("%s (id: %s)", job.getName(), job.getId().toString()));
+			}
 		}
 
 		final TableItem[] tableItems = localToRemoteTable.getItems();

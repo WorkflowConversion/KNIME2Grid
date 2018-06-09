@@ -59,6 +59,7 @@ import com.workflowconversion.knime2grid.model.Input;
 import com.workflowconversion.knime2grid.model.Job;
 import com.workflowconversion.knime2grid.model.Output;
 import com.workflowconversion.knime2grid.model.Workflow;
+import com.workflowconversion.knime2grid.resource.Application;
 
 /**
  * Exports KNIME workflows to WS-PGRADE format.
@@ -107,11 +108,10 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	// the structure of a gUSE archive is as follows:
 	// workflow.zip
 	// |
-	// |- workflow.xml (file containing the workflow definition, more on this
-	// below)
+	// |- workflow.xml (file containing the workflow definition, more on this below)
 	// |- [any_name] (directory containing jobs)
 	// |
-	// |- [job_one_name] (directory containing port folders of a job)
+	// - [job_one_name] (directory containing port folders of a job)
 	// | |
 	// | |- execute.bin (script executing the job, must be named execute.bin)
 	// | |
@@ -119,62 +119,66 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	// | | |
 	// | | |--0 (the file must be named 0)
 	// | |
-	// | |-[1] (directory containing an input file, named after port number)
+	// | |- [1] (directory containing an input file, named after port number)
 	// | |
 	// | |--0 (the file must be named 0)
 	// |
-	// |- [job_two_name] (another directory containing port folders of a job)
+	// - [job_two_name] (another directory containing port folders of a job)
 	//
-	// the structure of workflow.xml is roughly as given below:
-	// <workflow>
-	// <graf name="testgraph2>
-	// <job name="Mixer">
-	// <input name="words" prejob="" preoutput="" seq="0"/>
-	// <input name="numbers" prejob="" preoutput="" seq="1"/>
-	// <output name="combined" seq="2"/>
-	// </job>
-	// <job name="Modifier">
-	// <input name="wordsnumbers" prejob="Mixer" preoutput="1" seq="0"/>
-	// <output name="finalresult" seq="1"/>
-	// </job>
-	// </graf>
-	// <real>
-	// <job name="Mixer">
-	// <input name="words" prejob="" preoutput="" seq="0">
-	// <port_prop key="file" value="C:/fakepath/words.txt"/>
-	// <port_prop key="intname" value="words"/>
-	// </input>
-	// <input name="numbers" prejob="" preoutput="" seq="1">
-	// <port_prop key="file" value="C:/fakepath/numbers.txt"/>
-	// <port_prop key="intname" value="numbers"/>
-	// </input>
-	// <output name="combined" seq="2"/>
-	// <execute key="gridtype" value="moab"/>
-	// <execute key="resource" value="queue_name"/>
-	// <execute key="binary" value="C:/fakepath/combiner.sh"/>
-	// <execute key="jobistype" value="binary"/>
-	// <execute key="grid" value="cluster.uni.com"/>
-	// <execute key="params" value="-w words -n numbers -c combined"/>
-	// </job>
-	// <job name="Modifier">
-	// <input name="wordsnumbers" prejob="Mixer" preoutput="1" seq="0"/>
-	// <output name="finalresult" seq="1"/>
-	// <execute key="gridtype" value="moab"/>
-	// <execute key="resource" value="queue_name"/>
-	// <execute key="binary" value="C:/fakepath/modifier.sh"/>
-	// <execute key="jobistype" value="binary"/>
-	// <execute key="grid" value="cluster.uni.com"/>
-	// <execute key="params" value="-i wordsnumbers -o finalresult"/>
-	// </job>
-	// </real>
-	// </workflow>
-	//
-	// workflow.xml, in this case, represents a workflow composed of two jobs
-	// (Mixer, Modifier);
-	// Mixer has two inputs and one output, which is connected to the only
-	// Modifier's input.
-	// Modifier has one channeled input and one output.
-	//
+	/**
+	 * use a pre block to avoid Eclipse formatter breaking indentation in the shown XML
+	 * 
+	 * <pre>
+	 * <workflow>
+	 *   <graf name="testgraph2>
+	 *     <job name="Mixer">
+	 *       <input name="words" prejob="" preoutput="" seq="0"/>
+	 *       <input name="numbers" prejob="" preoutput="" seq="1"/>
+	 *       <output name="combined" seq="2"/>
+	 *     </job>
+	 *    <job name="Modifier">
+	 *      <input name="wordsnumbers" prejob="Mixer" preoutput="1" seq="0"/>
+	 *      <output name="finalresult" seq="1"/>
+	 *    </job>
+	 *  </graf>
+	 *  <real>
+	 *    <job name="Mixer">
+	 *      <input name="words" prejob="" preoutput="" seq="0">
+	 *        <port_prop key="file" value="C:/fakepath/words.txt"/>
+	 *        <port_prop key="intname" value="words"/>
+	 *      </input>
+	 *      <input name="numbers" prejob="" preoutput="" seq="1">
+	 *        <port_prop key="file" value="C:/fakepath/numbers.txt"/>
+	 *        <port_prop key="intname" value="numbers"/>
+	 *      </input>
+	 *      <output name="combined" seq="2"/>
+	 *      <execute key="gridtype" value="moab"/>
+	 *      <execute key="resource" value="queue_name"/>
+	 *      <execute key="binary" value="C:/fakepath/combiner.sh"/>
+	 *      <execute key="jobistype" value="binary"/>
+	 *      <execute key="grid" value="cluster.uni.com"/>
+	 *      <!-- words, numbers and combined are internal names of ports
+	 *           that were defined in the abstract (<graf> element) -->
+	 *      <execute key="params" value="-w words -n numbers -c combined"/>
+	 *    </job>
+	 *    <job name="Modifier">
+	 *      <input name="wordsnumbers" prejob="Mixer" preoutput="1" seq="0"/>
+	 *      <output name="finalresult" seq="1"/>
+	 *      <execute key="gridtype" value="moab"/>
+	 *      <execute key="resource" value="queue_name"/>
+	 *      <execute key="binary" value="C:/fakepath/modifier.sh"/>
+	 *      <execute key="jobistype" value="binary"/>
+	 *      <execute key="grid" value="cluster.uni.com"/>
+	 *      <execute key="params" value="-i wordsnumbers -o finalresult"/>
+	 *    </job>
+	 *  </real>
+	 *</workflow>
+	 * </pre>
+	 * 
+	 * workflow.xml, in this case, represents a workflow composed of two jobs (Mixer, Modifier); Mixer has two inputs and one output, which is connected to the
+	 * only Modifier's input. Modifier has one channeled input and one output.
+	 */
+
 	@Override
 	public void export(final Workflow workflow, final File destination) throws Exception {
 		if (LOGGER.isDebugEnabled()) {
@@ -257,6 +261,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		document.setXmlVersion("1.0");
 
 		final Element workflowElement = document.createElement("workflow");
+		document.appendChild(workflowElement);
 		final String workflowName = "KNIME_Export" + System.currentTimeMillis();
 		workflowElement.setAttribute("download", "all");
 		workflowElement.setAttribute("export", "proj");
@@ -281,12 +286,6 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			jobElement.setAttribute("x", Integer.toString(job.getX()));
 			jobElement.setAttribute("y", Integer.toString(job.getY()));
 
-			addExecutionProperty(jobElement, "type", "Sequence");
-			addExecutionProperty(jobElement, "params", StringEscapeUtils.escapeXml(generateCommandLine(job)));
-			addExecutionProperty(jobElement, "jobistype", "binary");
-			addExecutionProperty(jobElement, "jobmanager", "");
-			// addMiddlewareSpecificProperties(builder);
-
 			// inputs
 			int totalIgnoredInputs = 0;
 			for (int i = 0, n = job.getNrInputs(); i < n; i++) {
@@ -306,13 +305,9 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 				final Job source = workflow.getJob(input.getSourceId());
 				String preJob = "";
 				String preOutput = "";
-				// in the case of inputs whose source is the 'Input File' node
-				// we can use this as REAL inputs in wspgrade (i.e., the user
+				// in the case of inputs whose source is the 'Input File' node we can use this as REAL inputs in wspgrade (i.e., the user
 				// would have to actually upload something)
-				// in wspgrade, if prejob and preoutput attributes are empty,
-				// it means that the port needs to be configured, since it's not
-				// a channel
-				// if (!"Input File".equals(source.getName())) {
+				// in wspgrade, if prejob and preoutput attributes are empty, it means that the port needs to be configured, since it's not a channel
 				if (source != null) {
 					preJob = source.getName();
 					// TODO: WTF?
@@ -365,6 +360,11 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			jobElement.setAttribute("text", job.getDescription());
 			jobElement.setAttribute("x", Integer.toString(job.getX()));
 			jobElement.setAttribute("y", Integer.toBinaryString(job.getY()));
+
+			addExecutionProperty(jobElement, "type", "Sequence");
+			addExecutionProperty(jobElement, "params", generateCommandLine(job));
+			addExecutionProperty(jobElement, "jobistype", "binary");
+			addMiddlewareSpecificProperties(jobElement, job);
 
 			// inputs
 			int ignoredInputs = 0;
@@ -451,8 +451,6 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			fixDuplicateJobName(nameOccurrenceMap, job);
 			fixFileLists(job);
 		}
-		// Nodes like ZipLoopStart/End will be collapsed into a port
-
 	}
 
 	// remove any weird characters not allowed in job names
@@ -484,87 +482,27 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 
 	}
 
-	// // if job is a generator job, we will:
-	// // 1. move connection from the source of its input port to the input port of the target of its output
-	// port
-	// // 2. don't add the generator job to the workflow
-	// if (job.getJobType() == Job.JobType.Generator) {
-	// // get the input port from the "generator" job (right now, limited to
-	// 1!!!!)
-	// final Input generatorInput = job.getInputByPortNr(0);
-	// // get the output port from the "generator" job (right now, limited to
-	// 1!!!)
-	// final Output generatorOutput = job.getOutputByPortNr(0);
-	// // connect the source of the collector input to the target of the
-	// generator output
-	// final Destination sourceDestination =
-	// workflow.getJob(generatorInput.getSourceId()).getOutputByPortNr(0)
-	// .getDestinations().iterator().next();
-	// sourceDestination.setTarget(generatorOutput.getDestinations().iterator().next().getTarget());
-	// sourceDestination.setTargetPortNr(0);
-	// // remove the connection between the target job and the generator output
-	// // FIXME: this shitty line of code right here doesn't compile
-	// //
-	// generatorOutput.getDestinations().iterator().next().getTarget().getInput(0)
-	// // .setSource(generatorInput.getSource());
-	// // flag the port from the source as collector port
-	// workflow.getJob(generatorInput.getSourceId()).getOutputByPortNr(0).setGenerator(true);
-	// // "remove" the job by ignoring it
-	// job.setIgnored(true);
-	// } else if (job.getJobType() == Job.JobType.Collector) {
-	// // get the input port from the "collector" job
-	// final Input collectorInput = job.getInputByPortNr(0);
-	// // get the output port from the "collector" job
-	// final Output collectorOutput = job.getOutputByPortNr(0);
-	// // connect the source of the input to the target of the
-	// // collector output
-	// final Destination sourceDestination =
-	// workflow.getJob(collectorInput.getSourceId()).getOutputByPortNr(0)
-	// .getDestinations().iterator().next();
-	// sourceDestination.setTarget(collectorOutput.getDestinations().iterator().next().getTarget());
-	// sourceDestination.setTargetPortNr(0);
-	// // remove the connection between the target job and the
-	// // collector output
-	// // FIXME: this shit line of code right here doesn't compile
-	// //
-	// collectorOutput.getDestinations().iterator().next().getTarget().getInput(0)
-	// // .setSource(collectorInput.getSource());
-	// // flag the port as collector
-	// collectorOutput.getDestinations().iterator().next().getTarget().getInputByPortNr(0).setCollector(true);
-	// // "remove" the job by ignoring it
-	// job.setIgnored(true);
-	// } else if ("FileMerger".equals(job.getName())) {
-	// // prepare the target job
-	// final Job targetJob =
-	// job.getOutputByPortNr(0).getDestinations().iterator().next().getTarget();
-	// targetJob.clearInputs();
-	// for (int i = 0; i < job.getNrOutputs(); i++) {
-	// final Job sourceJob =
-	// workflow.getJob(job.getInputByPortNr(i).getSourceId());
-	// sourceJob.getOutputByPortNr(i).clearDestinations();
-	// final Destination dest = new Destination(targetJob, i);
-	// sourceJob.getOutputByPortNr(i).addDestination(dest);
-	// // FIXME: this shitty line of code right here doesn't compile
-	// // targetJob.getInput(i).setSource(sourceJob);
-	// }
-	// // ignore this job
-	// job.setIgnored(true);
-	// }
-	// }
-	/*
-	 * private void addMiddlewareSpecificProperties(final StringBuilder builder) { if ("moab".equals(exportMode)) { addExecutionProperty(builder, "gridtype",
-	 * "moab"); addExecutionProperty(builder, "resource", "hpc-uni"); addExecutionProperty(builder, "grid", "hpc-bw.uni-tuebingen.de"); } else if
-	 * ("UNICORE".equals(exportMode)) { addExecutionProperty(builder, "gridtype", "unicore"); addExecutionProperty(builder, "resource",
-	 * "flavus.informatik.uni-tuebingen.de:8090"); addExecutionProperty(builder, "grid", "flavus.informatik.uni-tuebingen.de:8090");
-	 * addDescriptionProperty(builder, "unicore.keyWalltime", "30"); addDescriptionProperty(builder, "unicore.keyMemory", "2000"); } }
-	 */
+	private void addMiddlewareSpecificProperties(final Element jobElement, final Job job) {
+		final Application remoteApplication = job.getRemoteApplication();
+		if (remoteApplication != null) {
+			addExecutionProperty(jobElement, "gridtype", remoteApplication.getOwningResource().getType());
+			addExecutionProperty(jobElement, "resource", job.getRemoteQueue() != null ? job.getRemoteQueue().getName() : "");
+			addExecutionProperty(jobElement, "grid", remoteApplication.getOwningResource().getName());
+			// FIXME: include code handling UNICORE (keeping old prototype code here for reference)
+			// addExecutionProperty(builder, "gridtype", "unicore");
+			// addExecutionProperty(builder, "resource", "flavus.informatik.uni-tuebingen.de:8090");
+			// addExecutionProperty(builder, "grid", "flavus.informatik.uni-tuebingen.de:8090");
+			// addExecutionProperty(builder, "jobmanager", remoteApplication.getName() + ' ' + remoteApplication.getVersion());
+			// addDescriptionProperty(builder, "unicore.keyWalltime", "30");
+			// addDescriptionProperty(builder, "unicore.keyMemory", "2000");
+		}
+	}
+
 	private boolean ignoreInput(final Input input) {
-		// ignore unconnected inputs
 		return input.getConnectionType() == ConnectionType.UserProvided;
 	}
 
 	private boolean ignoreOutput(final Output output) {
-		// ignore unconnected outputs
 		return output.getDestinations().isEmpty();
 	}
 
@@ -572,8 +510,8 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		final Document document = jobElement.getOwnerDocument();
 		final Element descriptionElement = document.createElement("description");
 		jobElement.appendChild(descriptionElement);
-		descriptionElement.setAttribute("key", key);
-		descriptionElement.setAttribute("value", value);
+		descriptionElement.setAttribute("key", StringEscapeUtils.escapeXml(key));
+		descriptionElement.setAttribute("value", StringEscapeUtils.escapeXml(value));
 	}
 
 	private void addConcretePortProperty(final Element portElement, final String key, final String value) {
@@ -582,9 +520,9 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		portElement.appendChild(portPropertiesElement);
 		portPropertiesElement.setAttribute("desc", "null");
 		portPropertiesElement.setAttribute("inh", "null");
-		portPropertiesElement.setAttribute("key", key);
 		portPropertiesElement.setAttribute("label", "null");
-		portPropertiesElement.setAttribute("value", value);
+		portPropertiesElement.setAttribute("key", StringEscapeUtils.escapeXml(key));
+		portPropertiesElement.setAttribute("value", StringEscapeUtils.escapeXml(value));
 	}
 
 	private void addExecutionProperty(final Element jobElement, final String key, final String value) {
@@ -593,9 +531,9 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		jobElement.appendChild(executeElement);
 		executeElement.setAttribute("desc", "null");
 		executeElement.setAttribute("inh", "null");
-		executeElement.setAttribute("key", key);
 		executeElement.setAttribute("label", "null");
-		executeElement.setAttribute("value", value);
+		executeElement.setAttribute("key", StringEscapeUtils.escapeXml(key));
+		executeElement.setAttribute("value", StringEscapeUtils.escapeXml(value));
 	}
 
 	/*

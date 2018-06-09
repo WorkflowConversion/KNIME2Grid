@@ -17,7 +17,7 @@ public interface SourceConverter {
 	boolean canHandle(final NodeContainer sourceNodeContainer);
 
 	/**
-	 * Converts the settings of the passed {@code sourceNodeContainer} into a {@link IFileParameter}.
+	 * Converts the settings of the passed {@code sourceNodeContainer} into an {@link IFileParameter}.
 	 * 
 	 * @param sourceNodeContainer
 	 *            The node that contains a reference to a file.
@@ -25,6 +25,5 @@ public interface SourceConverter {
 	 *            The manager in which the node is contained. .
 	 * @return The {@link IFileParameter} matching the settings of the passed node.
 	 */
-	IFileParameter convert(final NodeContainer sourceNodeContainer, final WorkflowManager workflowManager)
-			throws Exception;
+	IFileParameter convert(final NodeContainer sourceNodeContainer, final WorkflowManager workflowManager) throws Exception;
 }

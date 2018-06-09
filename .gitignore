@@ -6,5 +6,7 @@
 *.war
 *.ear
 
+bin/
+
 # .metadata folders from Eclipse
 **/.metadata

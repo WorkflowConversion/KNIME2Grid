@@ -59,8 +59,7 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 	}
 
 	@Override
-	public Job convert(final NativeNodeContainer nativeNodeContainer, final WorkflowManager workflowManager,
-			final File workingDirectory) throws Exception {
+	public Job convert(final NativeNodeContainer nativeNodeContainer, final WorkflowManager workflowManager, final File workingDirectory) throws Exception {
 		// we first need the CTD
 		final GenericKnimeNodeModel gknModel = (GenericKnimeNodeModel) (nativeNodeContainer).getNodeModel();
 		final INodeConfiguration nodeConfiguration = gknModel.getNodeConfiguration();
@@ -85,12 +84,10 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 		// we know that all inputs and outputs of GKNs are URLs, so this simplifies the conversion
 
 		// go through all connections to create inputs/outputs for this job
-		for (final ConnectionContainer connectionContainer : workflowManager
-				.getIncomingConnectionsFor(nativeNodeContainer.getID())) {
+		for (final ConnectionContainer connectionContainer : workflowManager.getIncomingConnectionsFor(nativeNodeContainer.getID())) {
 			final NodeID sourceNodeId = connectionContainer.getSource();
 			final int destPortNr = connectionContainer.getDestPort();
-			final Port destPort = nodeConfiguration.getInputPorts()
-					.get(ConverterUtils.convertFromKnimePort(destPortNr));
+			final Port destPort = nodeConfiguration.getInputPorts().get(ConverterUtils.convertFromKnimePort(destPortNr));
 			final Input input = new Input();
 			input.setSourceId(sourceNodeId);
 			input.setOriginalPortNr(destPortNr);
@@ -101,13 +98,11 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 			processedPortNames.add(destPort.getName());
 		}
 
-		for (final ConnectionContainer connectionContainer : workflowManager
-				.getOutgoingConnectionsFor(nativeNodeContainer.getID())) {
+		for (final ConnectionContainer connectionContainer : workflowManager.getOutgoingConnectionsFor(nativeNodeContainer.getID())) {
 			final int sourcePortNr = connectionContainer.getSourcePort();
 			if (job.getOutputByOriginalPortNr(sourcePortNr) == null) {
 				// first time we see the output, we need to add it
-				final Port sourcePort = nodeConfiguration.getOutputPorts()
-						.get(ConverterUtils.convertFromKnimePort(sourcePortNr));
+				final Port sourcePort = nodeConfiguration.getOutputPorts().get(ConverterUtils.convertFromKnimePort(sourcePortNr));
 				final Output newOutput = new Output();
 				newOutput.setMultiFile(sourcePort.isMultiFile());
 				newOutput.setName(sourcePort.getName());
@@ -117,22 +112,18 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 			}
 		}
 
-		// process all non-input/non-output parameters AND the CTD, if any. 
-		// this must be AFTER inputs/outputs have been processed, because adding a CTD input might 
-		// modify the indices of the inputs.
+		// process all non-input/non-output parameters AND the CTD, if any.
+		// this must be AFTER inputs/outputs have been processed, because adding a CTD input will modify the indices of the inputs.
 		boolean ctdFound = false;
 		for (final CommandLineElement element : commandLineElements) {
 			if (element instanceof CommandLineCTDFile) {
 				// create an input for the ctd file
 				if (ctdFound) {
-					throw new IllegalStateException(
-							"This job already has a CTD file. Only one CTD file per job is allowed.");
+					throw new IllegalStateException("This job already has a CTD file. Only one CTD file per job is allowed.");
 				}
-				associateAndFixPathsInCTD(workflowManager, (CommandLineCTDFile) element, job, nodeConfiguration,
-						nativeNodeContainer);
+				associateAndFixPathsInCTD(workflowManager, (CommandLineCTDFile) element, job, nodeConfiguration, nativeNodeContainer);
 				ctdFound = true;
-			} else if (element instanceof ParametrizedCommandLineElement
-					&& !processedPortNames.contains(element.getKey())) {
+			} else if (element instanceof ParametrizedCommandLineElement && !processedPortNames.contains(element.getKey())) {
 				// we need to process only true parameters, not flags or option identifiers
 				final Parameter<?> parameter = nodeConfiguration.getParameter(element.getKey());
 				job.addParameter(element.getKey(), parameter.getStringRep());
@@ -145,8 +136,7 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 				if (commandLineFile.isSequenced()) {
 					fixedPath = ConverterUtils.generateFileNameForExport(fileParameter.getKey(), extension);
 				} else {
-					fixedPath = ConverterUtils.generateFileNameForExport(fileParameter.getKey(), extension,
-							commandLineFile.getSequenceNumber());
+					fixedPath = ConverterUtils.generateFileNameForExport(fileParameter.getKey(), extension, commandLineFile.getSequenceNumber());
 				}
 				fileParameter.setValue(fixedPath);
 			}
@@ -157,9 +147,8 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 
 	// associates the passed element to the given job
 	// it also "fixes" the inputs/outputs inside the CTD file
-	private void associateAndFixPathsInCTD(final WorkflowManager workflowManager, final CommandLineCTDFile element,
-			final Job job, final INodeConfiguration nodeConfiguration, final NativeNodeContainer nativeNodeContainer)
-					throws IOException, InvalidCTDFileException {
+	private void associateAndFixPathsInCTD(final WorkflowManager workflowManager, final CommandLineCTDFile element, final Job job,
+			final INodeConfiguration nodeConfiguration, final NativeNodeContainer nativeNodeContainer) throws IOException, InvalidCTDFileException {
 		final Input ctdInput = new Input();
 		ctdInput.setName("ctd-input");
 		ctdInput.setConnectionType(ConnectionType.UserProvided);
@@ -168,8 +157,7 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 		final INodeConfiguration clonedNodeConfiguration = cloneNodeConfiguration(nodeConfiguration);
 		fixFilenamesInConfiguration(workflowManager, clonedNodeConfiguration, nativeNodeContainer);
 		// set the fixed CTD as data for this input
-		final FileParameter ctdFileParameter = new FileParameter("ctdfile",
-				dumpConfiguration(clonedNodeConfiguration).getCanonicalPath());
+		final FileParameter ctdFileParameter = new FileParameter("ctdfile", dumpConfiguration(clonedNodeConfiguration).getCanonicalPath());
 		ctdInput.setData(ctdFileParameter);
 		job.addInput(ctdInput);
 		// fix the command line element!
@@ -184,14 +172,13 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 		return ctdFile;
 	}
 
-	private INodeConfiguration cloneNodeConfiguration(final INodeConfiguration nodeConfiguration)
-			throws InvalidCTDFileException, IOException {
+	private INodeConfiguration cloneNodeConfiguration(final INodeConfiguration nodeConfiguration) throws InvalidCTDFileException, IOException {
 		final StringWriter stringWriter = new StringWriter();
 		final BufferedWriter bufferedWriter = new BufferedWriter(stringWriter);
 		final CTDConfigurationWriter ctdWriter = new CTDConfigurationWriter(bufferedWriter);
 		ctdWriter.setIgnoreUnusedParameters(false);
 		ctdWriter.write(nodeConfiguration);
-		
+
 		final CTDConfigurationReader reader = new CTDConfigurationReader();
 		// no need to close byte array input streams
 		final InputStream inputStream = new ByteArrayInputStream(stringWriter.getBuffer().toString().getBytes(StandardCharsets.UTF_8));
@@ -202,37 +189,30 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 	// names and transform each filename to a relative path and will also include the name of the
 	// input/output port, for instance:
 	// original value for input named "ligands": /var/etc/tmp9237.sdf
-	// changed value for input named "ligands": ligands.sdf
-	private void fixFilenamesInConfiguration(final WorkflowManager workflowManager,
-			final INodeConfiguration nodeConfiguration, final NativeNodeContainer nativeNodeContainer) {
-		// [in/out]_{portname}, eg:
-		// in_sequence, out_result
+	// changed value for input named "ligands": ligands
+	private void fixFilenamesInConfiguration(final WorkflowManager workflowManager, final INodeConfiguration nodeConfiguration,
+			final NativeNodeContainer nativeNodeContainer) {
+		// [in/out]_{portname}, eg: in_sequence, out_result
 		// since an incoming and an outgoing port can have the same names, we need to be able to distinguish them
 		final Collection<PortWrapper> connectedIncomingPorts = new LinkedList<PortWrapper>();
 		final Collection<PortWrapper> connectedOutgoingPorts = new LinkedList<PortWrapper>();
 		// we first need to figure out which ports are connected and therefore, in use
-		extractConnectedPorts(workflowManager, nativeNodeContainer, nodeConfiguration, connectedIncomingPorts,
-				connectedOutgoingPorts);
+		extractConnectedPorts(workflowManager, nativeNodeContainer, nodeConfiguration, connectedIncomingPorts, connectedOutgoingPorts);
 		// keep track of the ports that we've processed so we only process each port only once
 		final Set<String> processedInPortNames = new TreeSet<String>();
 		final Set<String> processedOutPortNames = new TreeSet<String>();
 		// first, try the happy path, which is: ports already contain the info we need
-		fixPathsFromAssociatedParameters(workflowManager, nativeNodeContainer, nodeConfiguration,
-				connectedIncomingPorts, processedInPortNames);
-		fixPathsFromAssociatedParameters(workflowManager, nativeNodeContainer, nodeConfiguration,
-				connectedOutgoingPorts, processedOutPortNames);
+		fixPathsFromAssociatedParameters(workflowManager, nativeNodeContainer, nodeConfiguration, connectedIncomingPorts, processedInPortNames);
+		fixPathsFromAssociatedParameters(workflowManager, nativeNodeContainer, nodeConfiguration, connectedOutgoingPorts, processedOutPortNames);
 		// now, for the input ports, get the PortObject from the source port
-		fixIncomingPortsFromSourcePorts(workflowManager, nativeNodeContainer, nodeConfiguration, connectedIncomingPorts,
-				processedInPortNames);
+		fixIncomingPortsFromSourcePorts(workflowManager, nativeNodeContainer, nodeConfiguration, connectedIncomingPorts, processedInPortNames);
 		// for the output ports, just process the associated PortObject
-		fixOutgoingPortsUsingPortObjects(workflowManager, nativeNodeContainer, nodeConfiguration,
-				connectedOutgoingPorts, processedOutPortNames);
+		fixOutgoingPortsUsingPortObjects(workflowManager, nativeNodeContainer, nodeConfiguration, connectedOutgoingPorts, processedOutPortNames);
 	}
 
 	// fills the passed collections with the actually used incoming/outgoing ports
-	private void extractConnectedPorts(final WorkflowManager workflowManager,
-			final NativeNodeContainer nativeNodeContainer, final INodeConfiguration nodeConfiguration,
-			final Collection<PortWrapper> connectedIncomingPorts,
+	private void extractConnectedPorts(final WorkflowManager workflowManager, final NativeNodeContainer nativeNodeContainer,
+			final INodeConfiguration nodeConfiguration, final Collection<PortWrapper> connectedIncomingPorts,
 			final Collection<PortWrapper> connectedOutgoingPorts) {
 		final NodeID nodeId = nativeNodeContainer.getID();
 		for (final ConnectionContainer connection : workflowManager.getIncomingConnectionsFor(nodeId)) {
@@ -247,9 +227,8 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 		}
 	}
 
-	private void fixPathsFromAssociatedParameters(final WorkflowManager workflowManager,
-			final NativeNodeContainer nativeNodeContainer, final INodeConfiguration nodeConfiguration,
-			final Collection<PortWrapper> portWrappers, final Set<String> processedPorts) {
+	private void fixPathsFromAssociatedParameters(final WorkflowManager workflowManager, final NativeNodeContainer nativeNodeContainer,
+			final INodeConfiguration nodeConfiguration, final Collection<PortWrapper> portWrappers, final Set<String> processedPorts) {
 
 		for (final PortWrapper portWrapper : portWrappers) {
 			final Port port = portWrapper.port;
@@ -260,66 +239,55 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 					final String filename = ((FileParameter) associatedParameter).getValue();
 					if (StringUtils.isNotBlank(filename)) {
 						final String extension = FilenameUtils.getExtension(filename);
-						((FileParameter) associatedParameter)
-								.setValue(ConverterUtils.generateFileNameForExport(parameterName, extension));
+						((FileParameter) associatedParameter).setValue(ConverterUtils.generateFileNameForExport(parameterName, extension));
 						processedPorts.add(parameterName);
 					}
 				} else if (associatedParameter instanceof FileListParameter && port.isMultiFile()) {
 					if (associatedParameter.getValue() != null) {
 						final List<String> fixedFilenames = new LinkedList<String>();
-						if (!fixedFilenames.isEmpty()) {
-							int fileNumber = 0;
-							for (final String filename : ((FileListParameter) associatedParameter).getStrings()) {
-								final String extension = FilenameUtils.getExtension(filename);
-								fixedFilenames.add(
-										ConverterUtils.generateFileNameForExport(parameterName, extension, fileNumber));
-								fileNumber++;
-							}
+						int fileNumber = 0;
+						for (final String filename : ((FileListParameter) associatedParameter).getStrings()) {
+							final String extension = FilenameUtils.getExtension(filename);
+							fixedFilenames.add(ConverterUtils.generateFileNameForExport(parameterName, extension, fileNumber));
+							fileNumber++;
 						}
 						((FileListParameter) associatedParameter).setValue(fixedFilenames);
 						processedPorts.add(parameterName);
 					}
 				} else {
-					throw new RuntimeException(
-							"Invalid association between parameters and input files. This is probably a bug, please report it.");
+					throw new RuntimeException("Invalid association between parameters and input files. This is probably a bug, please report it.");
 				}
 			}
 		}
 	}
 
-	private void fixIncomingPortsFromSourcePorts(final WorkflowManager workflowManager,
-			final NativeNodeContainer nativeNodeContainer, final INodeConfiguration nodeConfiguration,
-			final Collection<PortWrapper> incomingPorts, final Set<String> processedPortNames) {
+	private void fixIncomingPortsFromSourcePorts(final WorkflowManager workflowManager, final NativeNodeContainer nativeNodeContainer,
+			final INodeConfiguration nodeConfiguration, final Collection<PortWrapper> incomingPorts, final Set<String> processedPortNames) {
 		for (final PortWrapper portWrapper : incomingPorts) {
 			final String key = portWrapper.port.getName();
 			if (!processedPortNames.contains(key)) {
 				final int portNr = ConverterUtils.convertToKnimePort(portWrapper.portNr);
-				final ConnectionContainer connection = workflowManager
-						.getIncomingConnectionFor(nativeNodeContainer.getID(), portNr);
-				final Node sourceNode = ((NativeNodeContainer) workflowManager.getNodeContainer(connection.getSource()))
-						.getNode();
-				transferToNodeConfiguration(nodeConfiguration, sourceNode, connection.getSourcePort(),
+				final ConnectionContainer connection = workflowManager.getIncomingConnectionFor(nativeNodeContainer.getID(), portNr);
+				final Node sourceNode = ((NativeNodeContainer) workflowManager.getNodeContainer(connection.getSource())).getNode();
+				transferToNodeConfiguration(nodeConfiguration, sourceNode, connection.getSourcePort(), portWrapper.port);
+				processedPortNames.add(key);
+			}
+		}
+	}
+
+	private void fixOutgoingPortsUsingPortObjects(final WorkflowManager workflowManager, final NativeNodeContainer nativeNodeContainer,
+			final INodeConfiguration nodeConfiguration, final Collection<PortWrapper> outgoingPorts, final Set<String> processedPortNames) {
+		for (final PortWrapper portWrapper : outgoingPorts) {
+			final String key = portWrapper.port.getName();
+			if (!processedPortNames.contains(key)) {
+				transferToNodeConfiguration(nodeConfiguration, nativeNodeContainer.getNode(), ConverterUtils.convertToKnimePort(portWrapper.portNr),
 						portWrapper.port);
 				processedPortNames.add(key);
 			}
 		}
 	}
 
-	private void fixOutgoingPortsUsingPortObjects(final WorkflowManager workflowManager,
-			final NativeNodeContainer nativeNodeContainer, final INodeConfiguration nodeConfiguration,
-			final Collection<PortWrapper> outgoingPorts, final Set<String> processedPortNames) {
-		for (final PortWrapper portWrapper : outgoingPorts) {
-			final String key = portWrapper.port.getName();
-			if (!processedPortNames.contains(key)) {
-				transferToNodeConfiguration(nodeConfiguration, nativeNodeContainer.getNode(),
-						ConverterUtils.convertToKnimePort(portWrapper.portNr), portWrapper.port);
-				processedPortNames.add(key);
-			}
-		}
-	}
-
-	private void transferToNodeConfiguration(final INodeConfiguration nodeConfiguration, final Node sourceNode,
-			final int sourcePortNr, final Port targetPort) {
+	private void transferToNodeConfiguration(final INodeConfiguration nodeConfiguration, final Node sourceNode, final int sourcePortNr, final Port targetPort) {
 		// try to use the PortObject
 		final IURIPortObject portObject = (IURIPortObject) sourceNode.getOutputObject(sourcePortNr);
 		if (portObject != null) {
@@ -330,14 +298,12 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 					int fileNumber = 0;
 					final List<String> fixedFilenames = new LinkedList<String>();
 					for (final URIContent uriContent : uriContents) {
-						fixedFilenames.add(ConverterUtils.generateFileNameForExport(targetPort.getName(),
-								uriContent.getExtension(), fileNumber));
+						fixedFilenames.add(ConverterUtils.generateFileNameForExport(targetPort.getName(), uriContent.getExtension(), fileNumber));
 						fileNumber++;
 					}
 					((FileListParameter) fileParam).setValue(fixedFilenames);
 				} else {
-					((FileParameter) fileParam).setValue(ConverterUtils.generateFileNameForExport(targetPort.getName(),
-							uriContents.get(0).getExtension()));
+					((FileParameter) fileParam).setValue(ConverterUtils.generateFileNameForExport(targetPort.getName(), uriContents.get(0).getExtension()));
 				}
 			} else {
 				throw new RuntimeException("PortObject is empty. This is probably a bug and should be reported!");
@@ -347,8 +313,7 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 			final String extension = portObjectSpec.getFileExtensions().get(0);
 			final String filename = ConverterUtils.generateFileNameForExport(targetPort.getName(), extension);
 			if (targetPort.isMultiFile()) {
-				((FileListParameter) nodeConfiguration.getParameter(targetPort.getName()))
-						.setValue(Arrays.asList(filename));
+				((FileListParameter) nodeConfiguration.getParameter(targetPort.getName())).setValue(Arrays.asList(filename));
 			} else {
 				((FileParameter) nodeConfiguration.getParameter(targetPort.getName())).setValue(filename);
 			}

@@ -73,6 +73,7 @@ public class Job implements GraphicElement {
 	private Queue remoteQueue;
 
 	private boolean ignored = false;
+	private boolean allowConversion = true;
 
 	public Job() {
 		this.inputsByName = new TreeMap<String, Input>();
@@ -98,6 +99,14 @@ public class Job implements GraphicElement {
 
 	public void setIgnored(final boolean ignored) {
 		this.ignored = ignored;
+	}
+
+	public boolean isAllowConversion() {
+		return allowConversion;
+	}
+
+	public void setAllowConversion(boolean allowConversion) {
+		this.allowConversion = allowConversion;
 	}
 
 	@Override

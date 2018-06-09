@@ -32,16 +32,18 @@ public class LoopNodeConverter implements NodeContainerConverter {
 	}
 
 	@Override
-	public Job convert(final NativeNodeContainer nativeNodeContainer, final WorkflowManager workflowManager,
-			final File workingDirectory) throws Exception {
+	public Job convert(final NativeNodeContainer nativeNodeContainer, final WorkflowManager workflowManager, final File workingDirectory) throws Exception {
 		// these kind of jobs are not executed, they are just a signal for workflow systems that a generator-collector
-		// pattern is going on
+		// pattern is going on, we still need a "dummy" job
 		final Job job = new Job();
+		job.setAllowConversion(false);
 		ConverterUtils.copyBasicInformation(job, nativeNodeContainer);
 		boolean generator = false, collector = false;
 		if (ConverterUtils.nodeModelMatchesClass(nativeNodeContainer, ZIPLOOPSTART_NODEMODEL_CLASS)) {
+			job.setName("Generator");
 			generator = true;
 		} else if (ConverterUtils.nodeModelMatchesClass(nativeNodeContainer, ZIPLOOPEND_NODEMODEL_CLASS)) {
+			job.setName("Collector");
 			collector = true;
 		}
 		// go through the connections and create input/outputs
