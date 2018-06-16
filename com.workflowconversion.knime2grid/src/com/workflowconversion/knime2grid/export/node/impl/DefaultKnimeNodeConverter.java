@@ -53,6 +53,7 @@ import com.workflowconversion.knime2grid.export.workflow.ConverterUtils;
 import com.workflowconversion.knime2grid.model.ConnectionType;
 import com.workflowconversion.knime2grid.model.Input;
 import com.workflowconversion.knime2grid.model.Job;
+import com.workflowconversion.knime2grid.model.JobType;
 import com.workflowconversion.knime2grid.model.Output;
 
 /**
@@ -102,6 +103,7 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 	@Override
 	public Job convert(final NativeNodeContainer nativeNodeContainer, final WorkflowManager workflowManager, final File workingDirectory) throws Exception {
 		final Job job = new Job();
+		job.setJobType(JobType.KnimeInternal);
 		ConverterUtils.copyBasicInformation(job, nativeNodeContainer);
 
 		// create a temporary folder on which we will create all of the mini

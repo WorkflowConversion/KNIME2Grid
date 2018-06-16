@@ -72,8 +72,7 @@ public class Job implements GraphicElement {
 	private Application remoteApplication;
 	private Queue remoteQueue;
 
-	private boolean ignored = false;
-	private boolean allowConversion = true;
+	private JobType jobType;
 
 	public Job() {
 		this.inputsByName = new TreeMap<String, Input>();
@@ -89,24 +88,16 @@ public class Job implements GraphicElement {
 		this.commandLine = Collections.<CommandLineElement>emptyList();
 	}
 
-	public boolean isIgnored() {
-		return ignored;
+	public JobType getJobType() {
+		return jobType;
+	}
+
+	public void setJobType(JobType jobType) {
+		this.jobType = jobType;
 	}
 
 	public void clearInputs() {
 		inputsByName.clear();
-	}
-
-	public void setIgnored(final boolean ignored) {
-		this.ignored = ignored;
-	}
-
-	public boolean isAllowConversion() {
-		return allowConversion;
-	}
-
-	public void setAllowConversion(boolean allowConversion) {
-		this.allowConversion = allowConversion;
 	}
 
 	@Override

@@ -6,7 +6,6 @@ package com.workflowconversion.knime2grid.model;
  * @author delagarza
  */
 public enum ConnectionType {
-
 	// all connections should start without being assigned
 	NotAssigned,
 	// connected to an output port

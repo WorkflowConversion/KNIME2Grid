@@ -43,6 +43,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.knime.core.node.NodeLogger;
@@ -50,7 +51,9 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.genericworkflownodes.knime.commandline.CommandLineElement;
+import com.genericworkflownodes.knime.parameter.FileListParameter;
 import com.genericworkflownodes.knime.parameter.FileParameter;
+import com.genericworkflownodes.knime.parameter.IFileParameter;
 import com.workflowconversion.knime2grid.KnimeWorkflowExporterActivator;
 import com.workflowconversion.knime2grid.export.workflow.KnimeWorkflowExporter;
 import com.workflowconversion.knime2grid.format.ExtensionFilter;
@@ -58,6 +61,7 @@ import com.workflowconversion.knime2grid.model.ConnectionType;
 import com.workflowconversion.knime2grid.model.Input;
 import com.workflowconversion.knime2grid.model.Job;
 import com.workflowconversion.knime2grid.model.Output;
+import com.workflowconversion.knime2grid.model.Port;
 import com.workflowconversion.knime2grid.model.Workflow;
 import com.workflowconversion.knime2grid.resource.Application;
 
@@ -68,6 +72,7 @@ import com.workflowconversion.knime2grid.resource.Application;
  */
 public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 
+	private static final char ZIP_ENTRY_SEPARATOR = '/';
 	private final static NodeLogger LOGGER = NodeLogger.getLogger(GuseKnimeWorkflowExporter.class);
 
 	/*
@@ -106,25 +111,11 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	 * @see com.workflowconversion.knime2grid.export.KnimeWorkflowExporter#export(org .knime.core.node.workflow.WorkflowManager, java.io.File)
 	 */
 	// the structure of a gUSE archive is as follows:
-	// workflow.zip
-	// |
-	// |- workflow.xml (file containing the workflow definition, more on this below)
-	// |- [any_name] (directory containing jobs)
-	// |
-	// - [job_one_name] (directory containing port folders of a job)
-	// | |
-	// | |- execute.bin (script executing the job, must be named execute.bin)
-	// | |
-	// | |- [0] (directory containing an input file, named after port number)
-	// | | |
-	// | | |--0 (the file must be named 0)
-	// | |
-	// | |- [1] (directory containing an input file, named after port number)
-	// | |
-	// | |--0 (the file must be named 0)
-	// |
-	// - [job_two_name] (another directory containing port folders of a job)
-	//
+	// workflow.zip:
+	// 1. workflow.xml - xml contianing the abstract and concrete definition of the workflow (see example below)
+	// 2. [any_name]/[job_name] - each job has a folder containing:
+	// 3. [any_name]/[job_name]/execute.bin - a script that executes the job, name must be execute.bin
+	// 4. [any_name]/[job_name]/[port_number]/0 - input associated with the port number [port_number], name must be 0
 	/**
 	 * use a pre block to avoid Eclipse formatter breaking indentation in the shown XML
 	 * 
@@ -205,7 +196,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 
 	private void writeWorkflowData(final Workflow workflow, final ZipOutputStream zipOutputStream) throws IOException, TransformerException {
 		// add a folder named after the workflow
-		final String rootEntryName = workflow.getName() + '/';
+		final String rootEntryName = workflow.getName() + ZIP_ENTRY_SEPARATOR;
 		zipOutputStream.putNextEntry(new ZipEntry(rootEntryName));
 		for (final Job job : workflow.getJobs()) {
 			writeJob(rootEntryName, zipOutputStream, job);
@@ -214,7 +205,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	}
 
 	private void writeJob(final String rootEntryName, final ZipOutputStream zipOutputStream, final Job job) throws IOException {
-		final String jobEntryName = rootEntryName + job.getName() + '/';
+		final String jobEntryName = rootEntryName + job.getName() + ZIP_ENTRY_SEPARATOR;
 		zipOutputStream.putNextEntry(new ZipEntry(jobEntryName));
 		// TODO: generate execute.bin
 		writeInputs(jobEntryName, zipOutputStream, job);
@@ -226,7 +217,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		zipOutputStream.putNextEntry(new ZipEntry(inputsFolderName));
 		for (final Input input : job.getInputs()) {
 			if (input.getConnectionType() == ConnectionType.UserProvided) {
-				final String inputFolderName = inputsFolderName + input.getPortNr() + '/';
+				final String inputFolderName = inputsFolderName + input.getPortNr() + ZIP_ENTRY_SEPARATOR;
 				zipOutputStream.putNextEntry(new ZipEntry(inputFolderName));
 				zipOutputStream.putNextEntry(new ZipEntry(inputFolderName + '0'));
 				zipOutputStream.write(Files.readAllBytes(Paths.get(((FileParameter) input.getData()).getValue())));
@@ -276,9 +267,6 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		grafElement.setAttribute("text", "KNIME Workflow exported to gUSE format.");
 
 		for (final Job job : workflow.getJobs()) {
-			if (job.isIgnored()) {
-				continue;
-			}
 			final Element jobElement = document.createElement("job");
 			grafElement.appendChild(jobElement);
 			jobElement.setAttribute("name", job.getName());
@@ -316,7 +304,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 				// }
 				final Element inputElement = document.createElement("input");
 				jobElement.appendChild(inputElement);
-				inputElement.setAttribute("name", input.getName());
+				inputElement.setAttribute("name", fixPortName(input));
 				inputElement.setAttribute("prejob", preJob);
 				inputElement.setAttribute("preoutput", preOutput);
 				inputElement.setAttribute("seq", Integer.toString(i - ignoredInputsSoFar));
@@ -334,7 +322,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 				}
 				final Element outputElement = document.createElement("output");
 				jobElement.appendChild(outputElement);
-				outputElement.setAttribute("name", output.getName());
+				outputElement.setAttribute("name", fixPortName(output));
 				outputElement.setAttribute("seq", Integer.toString(i - ignoredOutputsSoFar + (job.getNrInputs() - totalIgnoredInputs)));
 				outputElement.setAttribute("text", "Description of Port");
 				outputElement.setAttribute("x", Integer.toString(output.getX()));
@@ -350,10 +338,6 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		realElement.setAttribute("text", "Workflow generated by the KNIME2grid plug-in.");
 
 		for (final Job job : workflow.getJobs()) {
-			if (job.isIgnored()) {
-				continue;
-			}
-
 			final Element jobElement = document.createElement("job");
 			realElement.appendChild(jobElement);
 			jobElement.setAttribute("name", job.getName());
@@ -408,7 +392,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 
 				final Element outputElement = document.createElement("output");
 				jobElement.appendChild(outputElement);
-				outputElement.setAttribute("name", output.getName());
+				outputElement.setAttribute("name", fixPortName(output));
 				outputElement.setAttribute("seq", Integer.toString(i - ignoredOutputs));
 				outputElement.setAttribute("text", "Description of Port");
 				outputElement.setAttribute("x", Integer.toString(output.getX()));
@@ -416,7 +400,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 
 				final String mainCount = output.getConnectionType() == ConnectionType.Generator ? "2" : "1";
 				addConcretePortProperty(outputElement, "maincount0", mainCount);
-				addConcretePortProperty(outputElement, "intname", output.getName());
+				addConcretePortProperty(outputElement, "intname", fixPortName(output));
 				addConcretePortProperty(outputElement, "type0", "permanent");
 				addConcretePortProperty(outputElement, "maincount", mainCount);
 			}
@@ -436,6 +420,21 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		builder.append(writer.toString());
 	}
 
+	// guse requires port names to match the associated filename, including extension
+	private String fixPortName(final Port port) {
+		final IFileParameter associatedFile = port.getData();
+		String fixedPortName = port.getName();
+		if (associatedFile != null) {
+			if (associatedFile instanceof FileParameter) {
+				fixedPortName += '.' + FilenameUtils.getExtension(((FileParameter) associatedFile).getValue());
+			} else if (associatedFile instanceof FileListParameter) {
+				// guse doesn't support file lists, so we will provide an archive
+				fixedPortName += ".tar.gz";
+			}
+		}
+		return fixedPortName;
+	}
+
 	private String generateCommandLine(final Job job) {
 		final StringBuilder builder = new StringBuilder();
 		for (final CommandLineElement element : job.getCommandLine()) {
@@ -449,7 +448,6 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		for (final Job job : workflow.getJobs()) {
 			fixJobName(job);
 			fixDuplicateJobName(nameOccurrenceMap, job);
-			fixFileLists(job);
 		}
 	}
 
@@ -475,11 +473,6 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			job.setName(oldName + nameOccurrences);
 			nameOccurrenceMap.put(oldName, nameOccurrences + 1);
 		}
-	}
-
-	// TODO: gUSE doesn't support lists of files, we should use a custom script for such jobs
-	private void fixFileLists(final Job job) {
-
 	}
 
 	private void addMiddlewareSpecificProperties(final Element jobElement, final Job job) {

@@ -33,7 +33,9 @@ import org.knime.core.node.NodeLogger;
 import org.knime.workbench.core.util.ImageRepository;
 import org.knime.workbench.core.util.ImageRepository.SharedImages;
 
+import com.workflowconversion.knime2grid.exception.ApplicationException;
 import com.workflowconversion.knime2grid.model.Job;
+import com.workflowconversion.knime2grid.model.JobType;
 import com.workflowconversion.knime2grid.model.Workflow;
 import com.workflowconversion.knime2grid.resource.Application;
 import com.workflowconversion.knime2grid.resource.Queue;
@@ -49,12 +51,14 @@ public class ApplicationSelectionPage extends WizardPage {
 	private static final int LOCAL_JOB_COLUMN_INDEX = 0;
 	private static final int REMOTE_APPLICATION_COLUMN_INDEX = 1;
 	private static final int REMOTE_QUEUE_COLUMN_INDEX = 2;
+	private static final String REMOTE_KNIME_AP_KEY = "remoteknimeap";
+	private static final String JOB_INDEX_KEY = "jobindex";
 	private static final String SELECTED_REMOTE_RESOURCE_KEY = "remoteresource";
 	private static final String REMOTE_APPLICATION_COMBO_KEY = "appcombo";
 	private static final String REMOTE_QUEUE_COMBO_KEY = "queuecombo";
 
 	private final ArrayList<Application> currentRemoteApplications;
-	private final Job[] localJobs;
+	private final Job[] allLocalJobs;
 
 	/**
 	 * Constructor.
@@ -64,7 +68,7 @@ public class ApplicationSelectionPage extends WizardPage {
 				ImageRepository.getImageDescriptor(SharedImages.Node));
 		Validate.notNull(workflow, "workflow is required and cannot be null");
 
-		this.localJobs = workflow.getJobs().toArray(new Job[] {});
+		this.allLocalJobs = workflow.getJobs().toArray(new Job[] {});
 		currentRemoteApplications = new ArrayList<Application>();
 	}
 
@@ -120,7 +124,7 @@ public class ApplicationSelectionPage extends WizardPage {
 		localToRemoteLayoutData.heightHint = 200;
 		localToRemoteTable.setLayoutData(localToRemoteLayoutData);
 
-		final String[] columnTitles = { "Local KNIME Node", "Remote Application", "Queue" };
+		final String[] columnTitles = { "Local Application", "Remote Application", "Queue" };
 		final int[] columnWidths = { 250, 350, 250 };
 		for (int i = 0; i < columnTitles.length; i++) {
 			final TableColumn column = new TableColumn(localToRemoteTable, SWT.NONE);
@@ -132,13 +136,26 @@ public class ApplicationSelectionPage extends WizardPage {
 		applyButton.setText("Apply");
 		applyButton.setLayoutData(new GridData(SWT.CENTER, SWT.TOP, false, false));
 
+		// all internal KNIME nodes will be executed by the same remote process
+		// so we need to display only one entry in the table iff there is at least
+		// one internal KNIME node to be converted
+		if (hasInternalKnimeNodes(allLocalJobs)) {
+			final TableItem row = new TableItem(localToRemoteTable, SWT.BORDER);
+			row.setText(LOCAL_JOB_COLUMN_INDEX, "KNIME AP");
+			// "flag" this row so we can later figure out that it refers to the KNIME AP, representing all
+			// internal KNIME nodes
+			row.setData(REMOTE_KNIME_AP_KEY, "");
+		}
+
 		// populate the table
-		for (final Job job : localJobs) {
-			// "loop" nodes such as ZipLoopStart/End are not shown because they are not
-			// converted
-			if (job.isAllowConversion()) {
+		// since we will skip some jobs and might have introduced one entry for the KNIME AP, we need to keep track
+		// of the real index in the allLocalJobs array, because the n-th row on the table WILL NOT ALWAYS be the
+		// n-th item on the allLocalJobs array
+		for (int i = 0; i < allLocalJobs.length; i++) {
+			if (displayInConversionTable(allLocalJobs[i])) {
 				final TableItem row = new TableItem(localToRemoteTable, SWT.BORDER);
-				row.setText(LOCAL_JOB_COLUMN_INDEX, String.format("%s (id: %s)", job.getName(), job.getId().toString()));
+				row.setText(LOCAL_JOB_COLUMN_INDEX, String.format("%s (id: %s)", allLocalJobs[i].getName(), allLocalJobs[i].getId().toString()));
+				row.setData(JOB_INDEX_KEY, i);
 			}
 		}
 
@@ -254,7 +271,7 @@ public class ApplicationSelectionPage extends WizardPage {
 								"Invalid resources file provided. Check the logs for more information.");
 					} else {
 						for (int i = 0; i < tableItems.length; i++) {
-							localJobs[i].clearRemoteApplication();
+							allLocalJobs[i].clearRemoteApplication();
 							final TableItem row = tableItems[i];
 							row.setData(SELECTED_REMOTE_RESOURCE_KEY, null);
 							CCombo combo = (CCombo) row.getData(REMOTE_APPLICATION_COMBO_KEY);
@@ -278,18 +295,54 @@ public class ApplicationSelectionPage extends WizardPage {
 			public void widgetSelected(SelectionEvent e) {
 				if (e.getSource() == applyButton) {
 					LOG.info("Saving selected remote applications");
+					boolean remoteKnimeApRowFound = false;
 					for (int i = 0; i < tableItems.length; i++) {
 						final CCombo remoteApplicationCombo = (CCombo) tableItems[i].getData(REMOTE_APPLICATION_COMBO_KEY);
 						final int selectedRemoteApplicationIndex = remoteApplicationCombo.getSelectionIndex();
-						if (selectedRemoteApplicationIndex >= 0) {
-							final Application selectedRemoteApplication = currentRemoteApplications.get(selectedRemoteApplicationIndex);
-							localJobs[i].setRemoteApplication(selectedRemoteApplication);
 
-							final CCombo remoteQueuesCombo = (CCombo) tableItems[i].getData(REMOTE_QUEUE_COMBO_KEY);
-							final int selectedRemoteQueueIndex = remoteQueuesCombo.getSelectionIndex();
-							if (selectedRemoteQueueIndex >= 0) {
-								final Queue[] availableRemoteQueues = selectedRemoteApplication.getOwningResource().getQueues().toArray(new Queue[] {});
-								localJobs[i].setRemoteQueue(availableRemoteQueues[selectedRemoteQueueIndex]);
+						final CCombo remoteQueuesCombo = (CCombo) tableItems[i].getData(REMOTE_QUEUE_COMBO_KEY);
+						final int selectedRemoteQueueIndex = remoteQueuesCombo.getSelectionIndex();
+
+						Application selectedRemoteApplication = null;
+						if (selectedRemoteApplicationIndex >= 0) {
+							selectedRemoteApplication = currentRemoteApplications.get(selectedRemoteApplicationIndex);
+						}
+
+						Queue selectedRemoteQueue = null;
+						if (selectedRemoteQueueIndex >= 0) {
+							final Queue[] availableRemoteQueues = selectedRemoteApplication.getOwningResource().getQueues().toArray(new Queue[] {});
+							selectedRemoteQueue = availableRemoteQueues[selectedRemoteQueueIndex];
+						}
+
+						if (tableItems[i].getData(REMOTE_KNIME_AP_KEY) != null) {
+							if (remoteKnimeApRowFound) {
+								// oh-oh
+								throw new ApplicationException(
+										"The table relating local to remote jobs was not populated correctly. This is a bug and should be reported. Context: duplicate remote KNIME AP items.");
+							}
+							// apply to all internal KNIME jobs
+							for (int j = 0; j < allLocalJobs.length; j++) {
+								if (allLocalJobs[j].getJobType() == JobType.KnimeInternal) {
+									if (selectedRemoteApplication != null) {
+										allLocalJobs[j].setRemoteApplication(selectedRemoteApplication);
+									}
+									if (selectedRemoteQueue != null) {
+										allLocalJobs[j].setRemoteQueue(selectedRemoteQueue);
+									}
+								}
+							}
+							remoteKnimeApRowFound = true;
+						} else {
+							final Integer jobIndex = (Integer) tableItems[i].getData(JOB_INDEX_KEY);
+							if (jobIndex == null) {
+								throw new ApplicationException(
+										"The table relating local to remote jobs was not populated correctly. This is a bug and should be reported. Context: invalid job index.");
+							}
+							if (selectedRemoteApplication != null) {
+								allLocalJobs[jobIndex].setRemoteApplication(selectedRemoteApplication);
+							}
+							if (selectedRemoteQueue != null) {
+								allLocalJobs[jobIndex].setRemoteQueue(selectedRemoteQueue);
 							}
 						}
 					}
@@ -303,6 +356,20 @@ public class ApplicationSelectionPage extends WizardPage {
 		nodesTableGroup.pack();
 		container.pack();
 		setControl(container);
+	}
+
+	private boolean displayInConversionTable(final Job job) {
+		// a job will not allow to be converted
+		return job.getJobType() == JobType.CommandLine;
+	}
+
+	private boolean hasInternalKnimeNodes(Job[] jobs) {
+		for (final Job job : jobs) {
+			if (job.getJobType() == JobType.KnimeInternal) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void refreshRemoteResources(final Collection<Resource> remoteResources) {

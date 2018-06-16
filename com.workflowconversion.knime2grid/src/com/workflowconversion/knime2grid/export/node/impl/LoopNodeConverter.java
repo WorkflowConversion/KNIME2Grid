@@ -12,6 +12,7 @@ import com.workflowconversion.knime2grid.export.workflow.ConverterUtils;
 import com.workflowconversion.knime2grid.model.ConnectionType;
 import com.workflowconversion.knime2grid.model.Input;
 import com.workflowconversion.knime2grid.model.Job;
+import com.workflowconversion.knime2grid.model.JobType;
 import com.workflowconversion.knime2grid.model.Output;
 
 /**
@@ -36,14 +37,15 @@ public class LoopNodeConverter implements NodeContainerConverter {
 		// these kind of jobs are not executed, they are just a signal for workflow systems that a generator-collector
 		// pattern is going on, we still need a "dummy" job
 		final Job job = new Job();
-		job.setAllowConversion(false);
 		ConverterUtils.copyBasicInformation(job, nativeNodeContainer);
 		boolean generator = false, collector = false;
 		if (ConverterUtils.nodeModelMatchesClass(nativeNodeContainer, ZIPLOOPSTART_NODEMODEL_CLASS)) {
 			job.setName("Generator");
+			job.setJobType(JobType.Generator);
 			generator = true;
 		} else if (ConverterUtils.nodeModelMatchesClass(nativeNodeContainer, ZIPLOOPEND_NODEMODEL_CLASS)) {
 			job.setName("Collector");
+			job.setJobType(JobType.Collector);
 			collector = true;
 		}
 		// go through the connections and create input/outputs

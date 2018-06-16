@@ -79,8 +79,7 @@ public class ConverterUtils {
 	 *            The class.
 	 * @return {@code true} if the node model of the node with the given ID is an instance of the given class.
 	 */
-	public static boolean nodeModelMatchesClass(final WorkflowManager workflowManager, final NodeID nodeId,
-			final String className) {
+	public static boolean nodeModelMatchesClass(final WorkflowManager workflowManager, final NodeID nodeId, final String className) {
 		final NodeContainer node = workflowManager.getNodeContainer(nodeId);
 		return nodeModelMatchesClass(node, className);
 	}
@@ -126,8 +125,7 @@ public class ConverterUtils {
 	 * @return
 	 * @throws InvalidSettingsException
 	 */
-	public static NodeSettings getModelSettings(final NodeContainer nodeContainer,
-			final WorkflowManager workflowManager) throws InvalidSettingsException {
+	public static NodeSettings getModelSettings(final NodeContainer nodeContainer, final WorkflowManager workflowManager) throws InvalidSettingsException {
 		final NodeSettings nodeSettings = createEmptyNodeSettings();
 		workflowManager.saveNodeSettings(nodeContainer.getID(), nodeSettings);
 		return nodeSettings.getNodeSettings(Node.CFG_MODEL);
@@ -169,8 +167,7 @@ public class ConverterUtils {
 	}
 
 	/**
-	 * KNIME nodes contain an extra port for flow variables. This method converts a knime port number to the internal
-	 * format port number.
+	 * KNIME nodes contain an extra port for flow variables. This method converts a knime port number to the internal format port number.
 	 * 
 	 * @param knimePortNr
 	 *            The knime port number.
@@ -192,24 +189,21 @@ public class ConverterUtils {
 	}
 
 	/**
-	 * Given a port name and an extension, generates the following relative location
-	 * {@code [portName]/[portName].[extension]}.
-	 * This simple method helps avoiding clashes in file names that are used as inputs/outputs for jobs.
+	 * Given a port name and an extension, generates the following relative location {@code [portName]/[portName].[extension]}.
 	 * 
 	 * @param portName
 	 *            The name of the port needing the file.
 	 * @param extension
 	 *            The extension of the file.
-	 * @return The {@code [portName]/[portName].[extension]} relative location.
+	 * @return The {@code [portName].[extension]} relative location.
 	 */
 	public static String generateFileNameForExport(final String portName, final String extension) {
-		return portName + '/' + portName + '.' + extension;
+		return portName + '.' + extension;
 	}
 
 	/**
-	 * Given a port name, an index and an extension, generates the following relative location:
-	 * {@code [portName]/[portName]_[index].[extension]}
-	 * This simple method helps avoiding clashes in lists of files that are used as inputs/outputs for jobs.
+	 * Given a port name, an index and an extension, generates the following relative location: {@code [portName]/[portName]_[index].[extension]} This simple
+	 * method helps avoiding clashes in lists of files that are used as inputs/outputs for jobs.
 	 * 
 	 * @param portName
 	 *            The name of the port needing the file.
@@ -217,15 +211,17 @@ public class ConverterUtils {
 	 *            The extension of the file.
 	 * @param index
 	 *            The index of the file.
-	 * @return The {@code [portName]/[portName]_[index].[extension]} relative location.
+	 * @return The {@code [index]_[portName].[extension]} relative location.
 	 */
 	public static String generateFileNameForExport(final String portName, final String extension, final int index) {
-		return portName + '/' + portName + '_' + index + '.' + extension;
+		return index + '_' + portName + '.' + extension;
 	}
-	
+
 	/**
 	 * Nodes contain IDs that might not be suitable for filesystems
-	 * @param nodeId The id of a node.
+	 * 
+	 * @param nodeId
+	 *            The id of a node.
 	 * @return a String that can be used to name a file/folder.
 	 */
 	public static String fixNodeIdForFileSystem(final String nodeId) {
