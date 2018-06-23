@@ -208,10 +208,22 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		final String jobEntryName = rootEntryName + job.getName() + ZIP_ENTRY_SEPARATOR;
 		zipOutputStream.putNextEntry(new ZipEntry(jobEntryName));
 		// TODO: generate execute.bin
-		writeInputs(jobEntryName, zipOutputStream, job);
+		if (hasInputs(job)) {
+			writeInputs(jobEntryName, zipOutputStream, job);
+		}
 		zipOutputStream.closeEntry();
 	}
 
+	private boolean hasInputs(Job job) {
+		for (final Input input : job.getInputs()) {
+			if (input.getConnectionType() == ConnectionType.UserProvided) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// this method assumes that there are true inputs to write
 	private void writeInputs(final String rootEntryName, final ZipOutputStream zipOutputStream, final Job job) throws IOException {
 		final String inputsFolderName = rootEntryName + "inputs/";
 		zipOutputStream.putNextEntry(new ZipEntry(inputsFolderName));
@@ -461,8 +473,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		}
 	}
 
-	// gUSE doesn't allow duplicate in the names of jobs, so that has to be
-	// fixed
+	// gUSE doesn't allow duplicate in the names of jobs, so that has to be fixed
 	private void fixDuplicateJobName(final Map<String, Integer> nameOccurrenceMap, final Job job) {
 		Integer nameOccurrences = nameOccurrenceMap.get(job.getName());
 		if (nameOccurrences == null) {
@@ -491,10 +502,12 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		}
 	}
 
+	// TODO: do we need to ignore inputs?
 	private boolean ignoreInput(final Input input) {
 		return input.getConnectionType() == ConnectionType.UserProvided;
 	}
 
+	// TODO: do we need to ignore outputs?
 	private boolean ignoreOutput(final Output output) {
 		return output.getDestinations().isEmpty();
 	}
