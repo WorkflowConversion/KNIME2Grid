@@ -10,6 +10,9 @@ import java.util.Collection;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
+import org.apache.commons.text.similarity.LevenshteinDistance;
+import org.apache.commons.text.similarity.SimilarityScore;
+import org.apache.xmlbeans.impl.common.Levenshtein;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
@@ -44,6 +47,7 @@ import com.workflowconversion.knime2grid.resource.ResourceProvider;
 import com.workflowconversion.knime2grid.resource.impl.XMLBasedResourceProvider;
 
 public class ApplicationSelectionPage extends WizardPage {
+
 	private static final int HORIZONTAL_SPACING = 9;
 
 	private static final NodeLogger LOG = NodeLogger.getLogger(ApplicationSelectionPage.class);
@@ -51,12 +55,14 @@ public class ApplicationSelectionPage extends WizardPage {
 	private static final int LOCAL_JOB_COLUMN_INDEX = 0;
 	private static final int REMOTE_APPLICATION_COLUMN_INDEX = 1;
 	private static final int REMOTE_QUEUE_COLUMN_INDEX = 2;
-	private static final String REMOTE_KNIME_AP_KEY = "remoteknimeap";
-	private static final String JOB_INDEX_KEY = "jobindex";
-	private static final String SELECTED_REMOTE_RESOURCE_KEY = "remoteresource";
-	private static final String REMOTE_APPLICATION_COMBO_KEY = "appcombo";
-	private static final String REMOTE_QUEUE_COMBO_KEY = "queuecombo";
-
+	private static final String LOCAL_JOB_NAME_KEY = "local.job.name";
+	private static final String REMOTE_KNIME_AP_KEY = "remote.knimeap";
+	private static final String JOB_INDEX_KEY = "job.index";
+	private static final String SELECTED_REMOTE_RESOURCE_KEY = "remote.resource";
+	private static final String REMOTE_APPLICATION_COMBO_KEY = "app.combo";
+	private static final String REMOTE_QUEUE_COMBO_KEY = "queue.combo";
+	private static final String KNIME_AP_NAME = "KNIME AP";
+	
 	private final ArrayList<Application> currentRemoteApplications;
 	private final Job[] allLocalJobs;
 
@@ -141,10 +147,11 @@ public class ApplicationSelectionPage extends WizardPage {
 		// one internal KNIME node to be converted
 		if (hasInternalKnimeNodes(allLocalJobs)) {
 			final TableItem row = new TableItem(localToRemoteTable, SWT.BORDER);
-			row.setText(LOCAL_JOB_COLUMN_INDEX, "KNIME AP");
+			row.setText(LOCAL_JOB_COLUMN_INDEX, KNIME_AP_NAME);
 			// "flag" this row so we can later figure out that it refers to the KNIME AP, representing all
 			// internal KNIME nodes
 			row.setData(REMOTE_KNIME_AP_KEY, "");
+			row.setData(LOCAL_JOB_NAME_KEY, KNIME_AP_NAME);
 		}
 
 		// populate the table
@@ -155,6 +162,7 @@ public class ApplicationSelectionPage extends WizardPage {
 			if (displayInConversionTable(allLocalJobs[i])) {
 				final TableItem row = new TableItem(localToRemoteTable, SWT.BORDER);
 				row.setText(LOCAL_JOB_COLUMN_INDEX, String.format("%s (id: %s)", allLocalJobs[i].getName(), allLocalJobs[i].getId().toString()));
+				row.setData(LOCAL_JOB_NAME_KEY, allLocalJobs[i].getName());
 				row.setData(JOB_INDEX_KEY, i);
 			}
 		}
@@ -274,15 +282,9 @@ public class ApplicationSelectionPage extends WizardPage {
 							allLocalJobs[i].clearRemoteApplication();
 							final TableItem row = tableItems[i];
 							row.setData(SELECTED_REMOTE_RESOURCE_KEY, null);
-							CCombo combo = (CCombo) row.getData(REMOTE_APPLICATION_COMBO_KEY);
-							combo.removeAll();
-							combo.setText("Remote application");
-							for (final Application application : currentRemoteApplications) {
-								combo.add(String.format("%s, version %s (%s)", application.getName(), application.getVersion(),
-										application.getOwningResource().getName()));
-
-							}
-							combo = (CCombo) row.getData(REMOTE_QUEUE_COMBO_KEY);
+							fillAndPreselectBestMatchingResource(row);							
+							// clear the queue
+							CCombo combo = (CCombo) row.getData(REMOTE_QUEUE_COMBO_KEY);
 							combo.removeAll();
 						}
 					}
@@ -356,6 +358,35 @@ public class ApplicationSelectionPage extends WizardPage {
 		nodesTableGroup.pack();
 		container.pack();
 		setControl(container);
+	}
+
+	private void fillAndPreselectBestMatchingResource(final TableItem row) {
+		final String localApplicationName = ((String)row.getData(LOCAL_JOB_NAME_KEY)).toLowerCase().trim();
+		// we are using Levensthein distance, so the "worst" would be +infinity
+		int bestDistance = Integer.MAX_VALUE;
+		int bestMatchIndex = -1;
+		final SimilarityScore<Integer> scorer = new LevenshteinDistance();
+		
+		CCombo combo = (CCombo) row.getData(REMOTE_APPLICATION_COMBO_KEY);
+		combo.removeAll();
+		combo.setText("Remote application");
+		for (int i = 0; i < currentRemoteApplications.size(); i++) {
+			final Application remoteApplication = currentRemoteApplications.get(i);
+			combo.add(String.format("%s, version %s (%s)", remoteApplication.getName(), remoteApplication.getVersion(),
+					remoteApplication.getOwningResource().getName()));
+			int distance = scorer.apply(localApplicationName, remoteApplication.getName().toLowerCase().trim());
+			// according to the javadoc, the result could be -1, which, if not handled, would indicate that it is a very good match!
+			if (distance >= 0 && distance < bestDistance) {
+				bestDistance = distance;
+				bestMatchIndex = i; 
+			}
+		}
+		if (bestMatchIndex < 0) {
+			// something went wrong, somehow... but it isn't that bad anyway
+			LOG.warn("Could not find a single match between application names. This is an interesting bug, indeed.");
+		} else {
+			combo.select(bestMatchIndex);
+		}
 	}
 
 	private boolean displayInConversionTable(final Job job) {

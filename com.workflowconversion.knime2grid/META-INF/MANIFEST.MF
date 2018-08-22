@@ -5,24 +5,26 @@ Bundle-SymbolicName: com.workflowconversion.knime2grid;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: com.workflowconversion.knime2grid.KnimeWorkflowExporterActivator
 Bundle-Vendor: University of Tübingen and the Workflow Conversion team
-Require-Bundle: org.eclipse.core.runtime;bundle-version="3.12.0",
- org.knime.workbench.core;bundle-version="3.5.0",
+Require-Bundle: org.eclipse.core.runtime;bundle-version="3.13.0",
+ org.knime.workbench.core;bundle-version="3.6.0",
  org.apache.commons.lang;bundle-version="2.6.0",
- org.knime.workbench.editor;bundle-version="3.5.2",
- org.eclipse.core.resources;bundle-version="3.11.0",
- org.knime.workbench.ui;bundle-version="3.5.2",
- org.knime.workbench.repository;bundle-version="3.5.0",
- org.knime.product;bundle-version="3.5.2",
- org.knime.base;bundle-version="3.5.2",
- org.knime.workbench.explorer.view;bundle-version="8.1.0",
- org.knime.core.data.uritype;bundle-version="3.5.0",
+ org.knime.workbench.editor;bundle-version="3.6.0",
+ org.eclipse.core.resources;bundle-version="3.12.0",
+ org.knime.workbench.ui;bundle-version="3.6.0",
+ org.knime.workbench.repository;bundle-version="3.6.0",
+ org.knime.product;bundle-version="3.6.0",
+ org.knime.base;bundle-version="3.6.0",
+ org.knime.workbench.explorer.view;bundle-version="8.2.0",
+ org.knime.core.data.uritype;bundle-version="3.6.0",
  com.genericworkflownodes.knime;bundle-version="0.8.100",
  com.genericworkflownodes.knime.config;bundle-version="0.8.0",
- org.knime.core.ui;bundle-version="3.5.0",
- org.eclipse.ui,
- org.eclipse.ui.ide
+ org.knime.core.ui;bundle-version="3.6.0",
+ org.eclipse.ui;bundle-version="3.109.0",
+ org.eclipse.ui.ide;bundle-version="3.13.1"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Import-Package: com.genericworkflownodes.knime.commandline,
  com.genericworkflownodes.knime.commandline.impl,
  com.genericworkflownodes.knime.nodes.io.importer
+Bundle-ClassPath: lib/commons-text-1.4.jar,
+ .
