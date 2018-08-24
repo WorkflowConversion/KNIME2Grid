@@ -190,6 +190,7 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 
 	// the inputs/outputs of the original CTD contain absolute filenames... this method will "fix" those
 	// names and transform each filename to a relative path and will also include the name of the input/output port, for instance:
+	//
 	// original value for input named "ligands" with extension "sdf": /var/etc/tmp9237.sdf
 	// changed value for input": ligands.sdf
 	private void fixFilenamesInConfiguration(final WorkflowManager workflowManager, final INodeConfiguration nodeConfiguration,
