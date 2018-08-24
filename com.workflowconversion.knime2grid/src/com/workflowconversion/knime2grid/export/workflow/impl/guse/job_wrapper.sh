@@ -7,10 +7,12 @@ INPUT_PORTS_WITH_FILELIST="@@INPUT_PORTS_WITH_FILELIST@@"
 OUTPUT_PORTS_WITH_FILELIST="@@OUTPUT_PORTS_WITH_FILELIST@@"
 EXECUTABLE="@@EXECUTABLE@@"
 
-for input_port in ${INPUT_PORTS_WITH_FILELIST}; do
-	echo "expanding ${input_port}"
-	echo tar xfz ${input_port}
-done
+if [ -n "$INPUT_PORTS_WITH_FILELIST" ]; then
+	for input_port in ${INPUT_PORTS_WITH_FILELIST}; do
+		echo "expanding ${input_port}"
+		echo tar xfz ${input_port}
+	done
+fi
 
 # execute the tool
 echo "Executing: ${EXECUTABLE} $@"
@@ -19,10 +21,12 @@ ${EXECUTABLE} $@
 # compress the multi-file outputs and make sure to name the archive using port name and .tar.gz as extension
 # see: com.workflowconversion.knime2grid.export.workflow.ConverterUtils.generateFileNameForExport(String, String, int) and
 #      com.workflowconversion.knime2grid.export.workflow.impl.guse.GuseKnimeWorkflowExporter.fixPortName(Port)
-for output_port in ${OUTPUT_PORTS_WITH_FILELIST}; do
-	echo "compressing outputs for ${output_port}"
-	# the name of the port would be similar to foo.tar.gz, so we need to strip the .tar.gz (7 chars long) off the name
-	# tools have been configured to output files using the following pattern:
-	# 0_[foo].[bar], 1_[foo].[bar], ... 
-	tar cfz ${output_port} *_${output_port:0:(-7)}
-done
+if [ -n "$OUTPUT_PORTS_WITH_FILELIST" ]; then
+	for output_port in ${OUTPUT_PORTS_WITH_FILELIST}; do
+		echo "compressing outputs for ${output_port}"
+		# the name of the port would be similar to foo.tar.gz, so we need to strip the .tar.gz (7 chars long) off the name
+		# tools have been configured to output files using the following pattern:
+		# 0_[foo].[bar], 1_[foo].[bar], ... 
+		tar cfz ${output_port} *_${output_port:0:(-7)}
+	done
+fi
