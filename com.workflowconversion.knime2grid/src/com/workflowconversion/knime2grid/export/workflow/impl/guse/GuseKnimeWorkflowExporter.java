@@ -18,7 +18,11 @@
  */
 package com.workflowconversion.knime2grid.export.workflow.impl.guse;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +35,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -45,6 +50,8 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -254,7 +261,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			throws IOException {
 		final String jobEntryName = rootEntryName + job.getName() + ZIP_ENTRY_SEPARATOR;
 		zipOutputStream.putNextEntry(new ZipEntry(jobEntryName));
-		writeExecuteBin(rootEntryName, zipOutputStream, job);
+		writeExecuteBin(jobEntryName, zipOutputStream, job);
 		if (hasInputs(job)) {
 			writeInputs(jobEntryName, zipOutputStream, job);
 		}
@@ -312,8 +319,9 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		}
 
 		// script handles empty variables for input/output ports with filelist
-		return loadScript("job_wrapper.sh", "@@EXECUTABLE@@", job.getExecutablePath(), "@@INPUT_PORTS_WITH_FILELIST@@",
-				fileListInputs.toString(), "@@OUTPUT_PORTS_WITH_FILELIST@@", fileListOutputs.toString());
+		return loadScript("job_wrapper.sh", "@@EXECUTABLE@@", job.getRemoteApplication().getPath(),
+				"@@INPUT_PORTS_WITH_FILELIST@@", fileListInputs.toString(), "@@OUTPUT_PORTS_WITH_FILELIST@@",
+				fileListOutputs.toString());
 	}
 
 	// loads a script from file,
@@ -352,12 +360,44 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 				final String inputFolderName = inputsFolderName + input.getPortNr() + ZIP_ENTRY_SEPARATOR;
 				zipOutputStream.putNextEntry(new ZipEntry(inputFolderName));
 				zipOutputStream.putNextEntry(new ZipEntry(inputFolderName + '0'));
-				zipOutputStream.write(Files.readAllBytes(Paths.get(((FileParameter) input.getData()).getValue())));
+				writeInputFiles(zipOutputStream, input);
 				zipOutputStream.closeEntry();
 				zipOutputStream.closeEntry();
 			}
 		}
 		zipOutputStream.closeEntry();
+	}
+
+	private void writeInputFiles(final ZipOutputStream zipOutputStream, final Input input) throws IOException {
+		if (input.isMultiFile()) {
+			zipOutputStream.write(getFileListAsArchiveBytes(input));
+
+		} else {
+			zipOutputStream.write(Files.readAllBytes(Paths.get(((FileParameter) input.getData()).getValue())));
+		}
+	}
+
+	private byte[] getFileListAsArchiveBytes(final Input input) throws IOException {
+		final FileListParameter data = (FileListParameter) input.getData();
+
+		final ByteArrayOutputStream rawOutputStream = new ByteArrayOutputStream(4096);
+		final GZIPOutputStream gzOutputStream = new GZIPOutputStream(new BufferedOutputStream(rawOutputStream));
+		final TarArchiveOutputStream tarOutputStream = new TarArchiveOutputStream(gzOutputStream);
+
+		for (final String inputFileName : data.getValue()) {
+			final File inputFile = new File(inputFileName);
+			tarOutputStream.putArchiveEntry(new TarArchiveEntry(inputFile, inputFile.getName()));
+			final FileInputStream fileStream = new FileInputStream(inputFile);
+			final BufferedInputStream bufferedStream = new BufferedInputStream(fileStream);
+			IOUtils.copy(bufferedStream, tarOutputStream);
+			tarOutputStream.closeArchiveEntry();
+			fileStream.close();
+			bufferedStream.close();
+		}
+
+		tarOutputStream.close();
+
+		return rawOutputStream.toByteArray();
 	}
 
 	private String formatXml(final String unformattedXml) throws TransformerException {

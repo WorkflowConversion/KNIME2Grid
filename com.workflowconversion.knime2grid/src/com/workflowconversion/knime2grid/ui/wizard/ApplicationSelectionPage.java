@@ -12,7 +12,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.commons.text.similarity.SimilarityScore;
-import org.apache.xmlbeans.impl.common.Levenshtein;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
@@ -62,7 +61,7 @@ public class ApplicationSelectionPage extends WizardPage {
 	private static final String REMOTE_APPLICATION_COMBO_KEY = "app.combo";
 	private static final String REMOTE_QUEUE_COMBO_KEY = "queue.combo";
 	private static final String KNIME_AP_NAME = "KNIME AP";
-	
+
 	private final ArrayList<Application> currentRemoteApplications;
 	private final Job[] allLocalJobs;
 
@@ -148,20 +147,24 @@ public class ApplicationSelectionPage extends WizardPage {
 		if (hasInternalKnimeNodes(allLocalJobs)) {
 			final TableItem row = new TableItem(localToRemoteTable, SWT.BORDER);
 			row.setText(LOCAL_JOB_COLUMN_INDEX, KNIME_AP_NAME);
-			// "flag" this row so we can later figure out that it refers to the KNIME AP, representing all
+			// "flag" this row so we can later figure out that it refers to the KNIME AP,
+			// representing all
 			// internal KNIME nodes
 			row.setData(REMOTE_KNIME_AP_KEY, "");
 			row.setData(LOCAL_JOB_NAME_KEY, KNIME_AP_NAME);
 		}
 
 		// populate the table
-		// since we will skip some jobs and might have introduced one entry for the KNIME AP, we need to keep track
-		// of the real index in the allLocalJobs array, because the n-th row on the table WILL NOT ALWAYS be the
+		// since we will skip some jobs and might have introduced one entry for the
+		// KNIME AP, we need to keep track
+		// of the real index in the allLocalJobs array, because the n-th row on the
+		// table WILL NOT ALWAYS be the
 		// n-th item on the allLocalJobs array
 		for (int i = 0; i < allLocalJobs.length; i++) {
 			if (displayInConversionTable(allLocalJobs[i])) {
 				final TableItem row = new TableItem(localToRemoteTable, SWT.BORDER);
-				row.setText(LOCAL_JOB_COLUMN_INDEX, String.format("%s (id: %s)", allLocalJobs[i].getName(), allLocalJobs[i].getId().toString()));
+				row.setText(LOCAL_JOB_COLUMN_INDEX,
+						String.format("%s (id: %s)", allLocalJobs[i].getName(), allLocalJobs[i].getId().toString()));
 				row.setData(LOCAL_JOB_NAME_KEY, allLocalJobs[i].getName());
 				row.setData(JOB_INDEX_KEY, i);
 			}
@@ -196,13 +199,15 @@ public class ApplicationSelectionPage extends WizardPage {
 						if (selectedIndex >= 0) {
 							final Application selectedRemoteApplication = currentRemoteApplications.get(selectedIndex);
 							final Resource selectedRemoteResource = selectedRemoteApplication.getOwningResource();
-							final Resource previouslySelectedRemoteResource = (Resource) tableItems[itemIndex].getData(SELECTED_REMOTE_RESOURCE_KEY);
+							final Resource previouslySelectedRemoteResource = (Resource) tableItems[itemIndex]
+									.getData(SELECTED_REMOTE_RESOURCE_KEY);
 							if (previouslySelectedRemoteResource != selectedRemoteResource) {
 								// app from a different cluster was selected, we need to update queues
 								remoteQueueCombo.removeAll();
 								remoteQueueCombo.setText("Remote queue");
 								for (final Queue queue : selectedRemoteResource.getQueues()) {
-									remoteQueueCombo.add(String.format("%s (%s)", queue.getName(), selectedRemoteResource.getName()));
+									remoteQueueCombo.add(String.format("%s (%s)", queue.getName(),
+											selectedRemoteResource.getName()));
 								}
 
 								tableItems[itemIndex].setData(SELECTED_REMOTE_RESOURCE_KEY, selectedRemoteResource);
@@ -218,7 +223,7 @@ public class ApplicationSelectionPage extends WizardPage {
 		// bind UI controls to actions
 		localRadioButton.addSelectionListener(new CustomSelectionListener() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				if (e.getSource() == localRadioButton) {
 					localText.setEnabled(true);
 					browseButton.setEnabled(true);
@@ -229,7 +234,7 @@ public class ApplicationSelectionPage extends WizardPage {
 
 		remoteRadioButton.addSelectionListener(new CustomSelectionListener() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				if (e.getSource() == remoteRadioButton) {
 					remoteText.setEnabled(true);
 					localText.setEnabled(false);
@@ -257,7 +262,7 @@ public class ApplicationSelectionPage extends WizardPage {
 
 		refreshButton.addSelectionListener(new CustomSelectionListener() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				if (e.getSource() == refreshButton) {
 					final File resourcesFile;
 					boolean success = false;
@@ -271,7 +276,7 @@ public class ApplicationSelectionPage extends WizardPage {
 						resourceProvider.init();
 						refreshRemoteResources(resourceProvider.getResources());
 						success = true;
-					} catch (Exception ex) {
+					} catch (final Exception ex) {
 						LOG.error("Could not load resources file.", ex);
 					}
 					if (!success) {
@@ -282,9 +287,9 @@ public class ApplicationSelectionPage extends WizardPage {
 							allLocalJobs[i].clearRemoteApplication();
 							final TableItem row = tableItems[i];
 							row.setData(SELECTED_REMOTE_RESOURCE_KEY, null);
-							fillAndPreselectBestMatchingResource(row);							
+							fillAndPreselectBestMatchingResource(row);
 							// clear the queue
-							CCombo combo = (CCombo) row.getData(REMOTE_QUEUE_COMBO_KEY);
+							final CCombo combo = (CCombo) row.getData(REMOTE_QUEUE_COMBO_KEY);
 							combo.removeAll();
 						}
 					}
@@ -294,12 +299,13 @@ public class ApplicationSelectionPage extends WizardPage {
 
 		applyButton.addSelectionListener(new CustomSelectionListener() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(final SelectionEvent e) {
 				if (e.getSource() == applyButton) {
 					LOG.info("Saving selected remote applications");
 					boolean remoteKnimeApRowFound = false;
 					for (int i = 0; i < tableItems.length; i++) {
-						final CCombo remoteApplicationCombo = (CCombo) tableItems[i].getData(REMOTE_APPLICATION_COMBO_KEY);
+						final CCombo remoteApplicationCombo = (CCombo) tableItems[i]
+								.getData(REMOTE_APPLICATION_COMBO_KEY);
 						final int selectedRemoteApplicationIndex = remoteApplicationCombo.getSelectionIndex();
 
 						final CCombo remoteQueuesCombo = (CCombo) tableItems[i].getData(REMOTE_QUEUE_COMBO_KEY);
@@ -312,7 +318,8 @@ public class ApplicationSelectionPage extends WizardPage {
 
 						Queue selectedRemoteQueue = null;
 						if (selectedRemoteQueueIndex >= 0) {
-							final Queue[] availableRemoteQueues = selectedRemoteApplication.getOwningResource().getQueues().toArray(new Queue[] {});
+							final Queue[] availableRemoteQueues = selectedRemoteApplication.getOwningResource()
+									.getQueues().toArray(new Queue[] {});
 							selectedRemoteQueue = availableRemoteQueues[selectedRemoteQueueIndex];
 						}
 
@@ -361,30 +368,33 @@ public class ApplicationSelectionPage extends WizardPage {
 	}
 
 	private void fillAndPreselectBestMatchingResource(final TableItem row) {
-		final String localApplicationName = ((String)row.getData(LOCAL_JOB_NAME_KEY)).toLowerCase().trim();
+		final String localApplicationName = ((String) row.getData(LOCAL_JOB_NAME_KEY)).toLowerCase().trim();
 		// we are using Levensthein distance, so the "worst" would be +infinity
 		int bestDistance = Integer.MAX_VALUE;
 		int bestMatchIndex = -1;
 		final SimilarityScore<Integer> scorer = new LevenshteinDistance();
-		
-		CCombo combo = (CCombo) row.getData(REMOTE_APPLICATION_COMBO_KEY);
+
+		final CCombo combo = (CCombo) row.getData(REMOTE_APPLICATION_COMBO_KEY);
 		combo.removeAll();
 		combo.setText("Remote application");
 		for (int i = 0; i < currentRemoteApplications.size(); i++) {
 			final Application remoteApplication = currentRemoteApplications.get(i);
 			combo.add(String.format("%s, version %s (%s)", remoteApplication.getName(), remoteApplication.getVersion(),
 					remoteApplication.getOwningResource().getName()));
-			int distance = scorer.apply(localApplicationName, remoteApplication.getName().toLowerCase().trim());
-			// according to the javadoc, the result could be -1, which, if not handled, would indicate that it is a very good match!
+			final int distance = scorer.apply(localApplicationName, remoteApplication.getName().toLowerCase().trim());
+			// according to the javadoc, the result could be -1, which, if not handled,
+			// would indicate that it is a very good match!
 			if (distance >= 0 && distance < bestDistance) {
 				bestDistance = distance;
-				bestMatchIndex = i; 
+				bestMatchIndex = i;
 			}
 		}
 		if (bestMatchIndex < 0) {
 			// something went wrong, somehow... but it isn't that bad anyway
 			LOG.warn("Could not find a single match between application names. This is an interesting bug, indeed.");
 		} else {
+			LOG.infoWithFormat("Best match for local job '%s' was '%s' (distance=%d)", row.getData(LOCAL_JOB_NAME_KEY),
+					combo.getItem(bestMatchIndex), bestDistance);
 			combo.select(bestMatchIndex);
 		}
 	}
@@ -394,7 +404,7 @@ public class ApplicationSelectionPage extends WizardPage {
 		return job.getJobType() == JobType.CommandLine;
 	}
 
-	private boolean hasInternalKnimeNodes(Job[] jobs) {
+	private boolean hasInternalKnimeNodes(final Job[] jobs) {
 		for (final Job job : jobs) {
 			if (job.getJobType() == JobType.KnimeInternal) {
 				return true;
@@ -431,7 +441,7 @@ public class ApplicationSelectionPage extends WizardPage {
 	private static abstract class CustomSelectionListener implements SelectionListener {
 
 		@Override
-		public void widgetDefaultSelected(SelectionEvent e) {
+		public void widgetDefaultSelected(final SelectionEvent e) {
 			widgetSelected(e);
 		}
 	}
