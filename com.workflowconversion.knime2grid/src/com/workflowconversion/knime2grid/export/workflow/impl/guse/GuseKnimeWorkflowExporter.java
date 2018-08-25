@@ -58,7 +58,6 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.Validate;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.knime.core.node.NodeLogger;
-import org.knime.core.node.workflow.NodeID;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -453,26 +452,15 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 
 			// inputs
 			for (final Input input : job.getInputs()) {
-				String preJob = "";
-				String preOutput = "";
 				// in the case of inputs whose source is the 'Input File' node we can use this as REAL inputs in
 				// wspgrade (i.e., the user would have to actually upload something) in wspgrade, if prejob and
 				// preoutput attributes are empty, it means that the port needs to be configured,
 				// since it's not a channel
-				if (input.getConnectionType() != ConnectionType.UserProvided) {
-					// user-provided inputs have no source, but, warning, a valid sourceId does not
-					// equate to a valid node, because not all nodes "make it through"!
-					final NodeID sourceId = input.getSourceId();
-					final Job source = workflow.getJob(sourceId);
-					preJob = source.getName();
-					preOutput = Integer.toString(input.getSourcePortNr());
-				}
-
 				final Element inputElement = document.createElement("input");
 				jobElement.appendChild(inputElement);
 				inputElement.setAttribute("name", fixPortName(input));
-				inputElement.setAttribute("prejob", preJob);
-				inputElement.setAttribute("preoutput", preOutput);
+				inputElement.setAttribute("prejob", getPreJob(workflow, input));
+				inputElement.setAttribute("preoutput", getPreOutput(input));
 				inputElement.setAttribute("seq", Integer.toString(input.getPortNr()));
 				inputElement.setAttribute("text", "Port description");
 				inputElement.setAttribute("x", Integer.toString(input.getX()));
@@ -513,15 +501,11 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 
 			// inputs
 			for (final Input input : job.getInputs()) {
-				final Job source = workflow.getJob(input.getSourceId());
-				final String preJob = source.getName();
-				final String preOutput = Integer.toString(input.getSourcePortNr());
-
 				final Element inputElement = document.createElement("input");
 				jobElement.appendChild(inputElement);
 				inputElement.setAttribute("name", input.getName());
-				inputElement.setAttribute("prejob", preJob);
-				inputElement.setAttribute("preoutput", preOutput);
+				inputElement.setAttribute("prejob", getPreJob(workflow, input));
+				inputElement.setAttribute("preoutput", getPreOutput(input));
 				inputElement.setAttribute("seq", Integer.toString(input.getPortNr()));
 				inputElement.setAttribute("text", "Port description");
 				// FIXME: x, y for ports? These values have to be scaled, but ain't nobody got
@@ -568,6 +552,20 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		final StringWriter writer = new StringWriter();
 		transformer.transform(new DOMSource(document), new StreamResult(writer));
 		builder.append(writer.toString());
+	}
+
+	private String getPreJob(final Workflow workflow, final Input input) {
+		if (input.getConnectionType() != ConnectionType.UserProvided) {
+			return workflow.getJob(input.getSourceId()).getName();
+		}
+		return "";
+	}
+
+	private String getPreOutput(final Input input) {
+		if (input.getConnectionType() != ConnectionType.UserProvided) {
+			return Integer.toString(input.getSourcePortNr());
+		}
+		return "";
 	}
 
 	// gUSE requires port names to match the associated filename (including extension)
