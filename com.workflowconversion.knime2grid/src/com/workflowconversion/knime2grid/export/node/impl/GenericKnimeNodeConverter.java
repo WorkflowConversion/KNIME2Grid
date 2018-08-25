@@ -67,8 +67,6 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 		final Job job = new Job();
 		job.setJobType(JobType.CommandLine);
 		ConverterUtils.copyBasicInformation(job, nativeNodeContainer);
-		job.setExecutableName(nodeConfiguration.getExecutableName());
-		job.setExecutablePath(nodeConfiguration.getExecutablePath());
 
 		final Collection<CommandLineElement> commandLineElements = gknModel.getCommandLine(workingDirectory);
 		job.setCommandLine(commandLineElements);
@@ -79,13 +77,14 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 
 		// all inputs and outputs of GKNs are URIs, so this simplifies the conversion
 		// we need to know how to actually execute this job on a command line environment
-		// so we need to access the command generator... however, at this point, there is no guarantee
-		// that all jobs have been converted so we need to use the WorkflowManager to gather information about other nodes
+		// so we need to access the command generator... however, at this point, there
+		// is no guarantee that all jobs have been converted so we need to use the WorkflowManager to
+		// gather information about other nodes
 		createInputsAndOutputsFromKnimeWorkflow(nativeNodeContainer, workflowManager, nodeConfiguration, job, processedPortNames);
 
 		// process all non-input/non-output parameters AND the CTD, if any.
-		// this must be AFTER inputs/outputs have been processed, because we are adding a CTD input that might shift
-		// the indices of the current inputs.
+		// this must be AFTER inputs/outputs have been processed, because we are adding
+		// a CTD input that might shift the indices of the current inputs.
 		boolean ctdFound = false;
 		for (final CommandLineElement element : commandLineElements) {
 			if (element instanceof CommandLineCTDFile) {
@@ -97,7 +96,8 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 				addCTDInputPort(workflowManager, (CommandLineCTDFile) element, job, nodeConfiguration, nativeNodeContainer);
 				ctdFound = true;
 			} else if (element instanceof ParametrizedCommandLineElement && !processedPortNames.contains(element.getKey())) {
-				// we need to process only true parameters, not flags or option identifiers
+				// we need to process only true parameters, not flags or option
+				// identifiers
 				final Parameter<?> parameter = nodeConfiguration.getParameter(element.getKey());
 				job.addParameter(element.getKey(), parameter.getStringRep());
 			} else if (element instanceof CommandLineFile) {
@@ -148,8 +148,12 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 		}
 	}
 
-	// when executing GKN in KNIME, each GKN generates an "on the fly" CTD file and uses it to
-	// execute the associated binary, but what we need here is to add a new input containing a CTD
+	// when executing GKN in KNIME, each GKN generates an "on the fly" CTD file
+	// and
+	// uses it to
+	// execute the associated binary, but what we need here is to add a new
+	// input
+	// containing a CTD
 	private void addCTDInputPort(final WorkflowManager workflowManager, final CommandLineCTDFile element, final Job job,
 			final INodeConfiguration nodeConfiguration, final NativeNodeContainer nativeNodeContainer) throws IOException, InvalidCTDFileException {
 		final Input ctdInput = new Input();
@@ -188,23 +192,33 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 		return reader.read(inputStream);
 	}
 
-	// the inputs/outputs of the original CTD contain absolute filenames... this method will "fix" those
-	// names and transform each filename to a relative path and will also include the name of the input/output port, for instance:
+	// the inputs/outputs of the original CTD contain absolute filenames... this
+	// method will "fix" those
+	// names and transform each filename to a relative path and will also
+	// include
+	// the name of the input/output port, for instance:
 	//
-	// original value for input named "ligands" with extension "sdf": /var/etc/tmp9237.sdf
+	// original value for input named "ligands" with extension "sdf":
+	// /var/etc/tmp9237.sdf
 	// changed value for input": ligands.sdf
 	private void fixFilenamesInConfiguration(final WorkflowManager workflowManager, final INodeConfiguration nodeConfiguration,
 			final NativeNodeContainer nativeNodeContainer) {
 		// [in/out]_{portname}, eg: in_sequence, out_result
-		// since an incoming and an outgoing port can have the same names, we need to be able to distinguish them
+		// since an incoming and an outgoing port can have the same names, we
+		// need to be
+		// able to distinguish them
 		final Collection<PortWrapper> connectedIncomingPorts = new LinkedList<PortWrapper>();
 		final Collection<PortWrapper> connectedOutgoingPorts = new LinkedList<PortWrapper>();
-		// we first need to figure out which ports are connected and therefore, in use
+		// we first need to figure out which ports are connected and therefore,
+		// in use
 		extractConnectedPorts(workflowManager, nativeNodeContainer, nodeConfiguration, connectedIncomingPorts, connectedOutgoingPorts);
-		// keep track of the ports that we've processed so we only process each port only once
+		// keep track of the ports that we've processed so we only process each
+		// port
+		// only once
 		final Set<String> processedInPortNames = new TreeSet<String>();
 		final Set<String> processedOutPortNames = new TreeSet<String>();
-		// first, try the happy path, which is: ports already contain the info we need
+		// first, try the happy path, which is: ports already contain the info
+		// we need
 		fixFilePathsFromAssociatedParameters(workflowManager, nativeNodeContainer, nodeConfiguration, connectedIncomingPorts, processedInPortNames);
 		fixFilePathsFromAssociatedParameters(workflowManager, nativeNodeContainer, nodeConfiguration, connectedOutgoingPorts, processedOutPortNames);
 		// now, for the input ports, get the PortObject from the source port
@@ -213,7 +227,8 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 		fixOutgoingPortsUsingPortObjects(workflowManager, nativeNodeContainer, nodeConfiguration, connectedOutgoingPorts, processedOutPortNames);
 	}
 
-	// fills the passed collections with the actually used incoming/outgoing ports
+	// fills the passed collections with the actually used incoming/outgoing
+	// ports
 	private void extractConnectedPorts(final WorkflowManager workflowManager, final NativeNodeContainer nativeNodeContainer,
 			final INodeConfiguration nodeConfiguration, final Collection<PortWrapper> connectedIncomingPorts,
 			final Collection<PortWrapper> connectedOutgoingPorts) {

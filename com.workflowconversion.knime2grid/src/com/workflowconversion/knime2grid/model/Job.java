@@ -32,11 +32,15 @@ import com.workflowconversion.knime2grid.resource.Application;
 import com.workflowconversion.knime2grid.resource.Queue;
 
 /**
- * This a simple object that contains all information related to a single job. Not all of the fields will be known at instantiation, so as the conversion
- * advances, different fields will be populated (e.g., fields such as {@link #x} or {@link #y} depend on the target platform).
+ * This a simple object that contains all information related to a single job.
+ * Not all of the fields will be known at instantiation, so as the conversion
+ * advances, different fields will be populated (e.g., fields such as {@link #x}
+ * or {@link #y} depend on the target platform).
  * 
- * It's worth noting that instances of this class don't <i>know</i> how to generate the command line needed to execute them, rather, this is set by an external
- * process, due to the fact that the command line depends on the type of Job (i.e., if this is a GKN job, it'll look different than a KNIME job).
+ * It's worth noting that instances of this class don't <i>know</i> how to
+ * generate the command line needed to execute them, rather, this is set by an
+ * external process, due to the fact that the command line depends on the type
+ * of Job (i.e., if this is a GKN job, it'll look different than a KNIME job).
  * 
  * @author Luis de la Garza
  */
@@ -59,17 +63,13 @@ public class Job implements GraphicElement {
 	private String name;
 	private String description;
 
-	// it makes sense to split this information in two parts... the executableName
-	// quite likely stays constant across platforms, whereas the path changes
-	private String executableName;
-	private String executablePath;
-
-	// the command line to execute this job... in general, to execute this job one would append
+	// the command line to execute this job... in general, to execute this job one
+	// would append
 	// path, executableName and commandLine
 	private Collection<CommandLineElement> commandLine;
 
-	// remote application and queue that have been associated to this job, if any
-	private Application remoteApplication;
+	// application and queue that have been associated to this job, if any
+	private Application associatedApplication;
 	private Queue remoteQueue;
 
 	private JobType jobType;
@@ -92,7 +92,7 @@ public class Job implements GraphicElement {
 		return jobType;
 	}
 
-	public void setJobType(JobType jobType) {
+	public void setJobType(final JobType jobType) {
 		this.jobType = jobType;
 	}
 
@@ -130,7 +130,8 @@ public class Job implements GraphicElement {
 		}
 		input.setPortNr(portNr);
 		if (inputsByOriginalPortNr.put(input.getOriginalPortNr(), input) != null) {
-			throw new InvalidParameterException("This job already has an input with the original port number: " + input.getOriginalPortNr());
+			throw new InvalidParameterException(
+					"This job already has an input with the original port number: " + input.getOriginalPortNr());
 		}
 	}
 
@@ -168,7 +169,8 @@ public class Job implements GraphicElement {
 		}
 		output.setPortNr(portNr);
 		if (outputsByOriginalPortNr.put(output.getOriginalPortNr(), output) != null) {
-			throw new InvalidParameterException("This job already has an input with the original port number: " + output.getOriginalPortNr());
+			throw new InvalidParameterException(
+					"This job already has an input with the original port number: " + output.getOriginalPortNr());
 		}
 	}
 
@@ -228,22 +230,6 @@ public class Job implements GraphicElement {
 		this.description = description;
 	}
 
-	public String getExecutableName() {
-		return executableName;
-	}
-
-	public void setExecutableName(final String executableName) {
-		this.executableName = executableName;
-	}
-
-	public String getExecutablePath() {
-		return executablePath;
-	}
-
-	public void setExecutablePath(final String executablePath) {
-		this.executablePath = executablePath;
-	}
-
 	public Collection<CommandLineElement> getCommandLine() {
 		return commandLine;
 	}
@@ -258,15 +244,15 @@ public class Job implements GraphicElement {
 
 	public void setRemoteApplication(final Application remoteApplication) {
 		Validate.notNull(remoteApplication, "remoteApplication cannot be null");
-		this.remoteApplication = remoteApplication;
+		this.associatedApplication = remoteApplication;
 	}
 
 	public void clearRemoteApplication() {
-		this.remoteApplication = null;
+		this.associatedApplication = null;
 	}
 
 	public Application getRemoteApplication() {
-		return remoteApplication;
+		return associatedApplication;
 	}
 
 	public void setRemoteQueue(final Queue remoteQueue) {
@@ -284,8 +270,8 @@ public class Job implements GraphicElement {
 
 	@Override
 	public String toString() {
-		return "Job [id=" + id + ", name=" + name + ", description=" + description + ", remoteApplication=" + remoteApplication + ", remoteQueue=" + remoteQueue
-				+ "]";
+		return "Job [id=" + id + ", name=" + name + ", description=" + description + ", remoteApplication="
+				+ associatedApplication + ", remoteQueue=" + remoteQueue + "]";
 	}
 
 }

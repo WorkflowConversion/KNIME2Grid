@@ -52,7 +52,7 @@ public class LoopNodeConverter implements NodeContainerConverter {
 		for (final ConnectionContainer connectionContainer : workflowManager.getIncomingConnectionsFor(nativeNodeContainer.getID())) {
 			final NodeID sourceID = connectionContainer.getSource();
 			final Input input = new Input();
-			input.setName("notused");
+			input.setName("input");
 			input.setSourceId(sourceID);
 			input.setOriginalPortNr(connectionContainer.getDestPort());
 			if (collector) {
@@ -62,7 +62,7 @@ public class LoopNodeConverter implements NodeContainerConverter {
 		}
 		for (final ConnectionContainer connectionContainer : workflowManager.getOutgoingConnectionsFor(nativeNodeContainer.getID())) {
 			final Output output = new Output();
-			output.setName("notused");
+			output.setName("output");
 			output.setOriginalPortNr(connectionContainer.getSourcePort());
 			if (generator) {
 				output.setConnectionType(ConnectionType.Generator);

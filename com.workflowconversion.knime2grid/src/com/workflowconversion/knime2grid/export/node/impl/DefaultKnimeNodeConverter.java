@@ -71,7 +71,8 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 	private static final String FLOW_VARIABLE_SUFFIX = "\",\"String\"";
 
 	private final static NodeLogger LOGGER = NodeLogger.getLogger(DefaultKnimeNodeConverter.class);
-	private final static WorkflowManager WORKFLOW_MANAGER = WorkflowManager.ROOT.createAndAddProject("KNIME_WF_converter_tmp_wf", new WorkflowCreationHelper());
+	private final static WorkflowManager WORKFLOW_MANAGER = WorkflowManager.ROOT
+			.createAndAddProject("KNIME_WF_converter_tmp_wf", new WorkflowCreationHelper());
 
 	static {
 		WORKFLOW_MANAGER.addListener(new WorkflowListener() {
@@ -86,7 +87,8 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 				case NODE_REMOVED:
 					s = WORKFLOW_MANAGER.getNodeContainers().size();
 					n = ((WorkflowManager) event.getOldValue()).getName();
-					LOGGER.debug("Removed project \"" + n + "\" from " + "(virtual) grid root workflow, total count: " + s);
+					LOGGER.debug(
+							"Removed project \"" + n + "\" from " + "(virtual) grid root workflow, total count: " + s);
 					break;
 				default:
 				}
@@ -101,7 +103,8 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 	}
 
 	@Override
-	public Job convert(final NativeNodeContainer nativeNodeContainer, final WorkflowManager workflowManager, final File workingDirectory) throws Exception {
+	public Job convert(final NativeNodeContainer nativeNodeContainer, final WorkflowManager workflowManager,
+			final File workingDirectory) throws Exception {
 		final Job job = new Job();
 		job.setJobType(JobType.KnimeInternal);
 		ConverterUtils.copyBasicInformation(job, nativeNodeContainer);
@@ -113,25 +116,29 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 		final File miniWorkflowDir = Files.createTempDirectory(sandboxDir, "miniwf").toFile();
 		final WorkflowCreationHelper creationHelper = new WorkflowCreationHelper();
 		creationHelper.setWorkflowContext(new WorkflowContext.Factory(miniWorkflowDir).createContext());
-		final WorkflowManager miniWorkflowManager = WORKFLOW_MANAGER.createAndAddProject("Mini Workflow for " + nativeNodeContainer.getNameWithID(),
-				creationHelper);
+		final WorkflowManager miniWorkflowManager = WORKFLOW_MANAGER
+				.createAndAddProject("Mini Workflow for " + nativeNodeContainer.getNameWithID(), creationHelper);
 		// copy and paste this node into the mini workflow
 		final WorkflowCopyContent.Builder contentBuilder = WorkflowCopyContent.builder();
 		contentBuilder.setNodeIDs(nativeNodeContainer.getID());
 
-		final NodeID miniWorkflowNodeId = miniWorkflowManager.copyFromAndPasteHere(workflowManager, contentBuilder.build()).getNodeIDs()[0];
+		final NodeID miniWorkflowNodeId = miniWorkflowManager
+				.copyFromAndPasteHere(workflowManager, contentBuilder.build()).getNodeIDs()[0];
 		int currentInput = 0, currentOutput = 0;
 
 		final Collection<CommandLineElement> commandLineElements = new LinkedList<CommandLineElement>();
-		// $ knime -noexit -consoleLog -application org.knime.product.KNIME_BATCH_APPLICATION -nosplash -workflowFile="<workflow-path>"
-		job.setExecutableName("knime");
+		// $ knime -noexit -consoleLog -application
+		// org.knime.product.KNIME_BATCH_APPLICATION -nosplash
+		// -workflowFile="<workflow-path>"
 		commandLineElements.add(new CommandLineFixedString("-noexit"));
 		commandLineElements.add(new CommandLineFixedString("-consoleLog"));
 		commandLineElements.add(new CommandLineFixedString("-application"));
-		commandLineElements.add(new CommandLineParameter(new StringParameter("application", "org.knime.product.KNIME_BATCH_APPLICATION")));
+		commandLineElements.add(new CommandLineParameter(
+				new StringParameter("application", "org.knime.product.KNIME_BATCH_APPLICATION")));
 		commandLineElements.add(new CommandLineFixedString("-nosplash"));
 
-		for (final ConnectionContainer connectionContainer : workflowManager.getIncomingConnectionsFor(nativeNodeContainer.getID())) {
+		for (final ConnectionContainer connectionContainer : workflowManager
+				.getIncomingConnectionsFor(nativeNodeContainer.getID())) {
 			final NodeID sourceNodeId = connectionContainer.getSource();
 			// this node is the recipient of another node's output find out
 			// which port is part of this connection
@@ -208,7 +215,8 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 			currentInput++;
 		}
 
-		for (final ConnectionContainer connectionContainer : workflowManager.getOutgoingConnectionsFor(nativeNodeContainer.getID())) {
+		for (final ConnectionContainer connectionContainer : workflowManager
+				.getOutgoingConnectionsFor(nativeNodeContainer.getID())) {
 			// outputs need to be added only once per job!
 			if (job.getOutputByOriginalPortNr(connectionContainer.getSourcePort()) == null) {
 				final NodeID destNodeId = connectionContainer.getDest();
@@ -238,7 +246,8 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 					// the number of elements in IURIPortObjects is dynamic, so we should
 					// flag this as multifile just to be sure
 					output.setMultiFile(true);
-					// TODO: do we need something like the following? outputSettings.add(new VariableSetting("FILE_EXTENSION", "extension_" + currentOutput));
+					// TODO: do we need something like the following? outputSettings.add(new
+					// VariableSetting("FILE_EXTENSION", "extension_" + currentOutput));
 				} else {
 					nodeFactory = new PortObjectWriterNodeFactory(portType);
 					outputSettings.add(new VariableSetting("filename", outputFileKey));
@@ -260,7 +269,8 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 			}
 		}
 
-		// we went through all of the inputs/outpus and added needed nodes to provide/extract data, we can now save the mini workflow
+		// we went through all of the inputs/outpus and added needed nodes to
+		// provide/extract data, we can now save the mini workflow
 		while (VMFileLocker.isLockedForVM(miniWorkflowDir)) {
 			VMFileLocker.unlockForVM(miniWorkflowDir);
 		}
@@ -271,8 +281,9 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 		}
 
 		// compress the workflow folder into a zip file
-		final File miniWorkflowArchive = Files
-				.createTempFile(sandboxDir, "knimejob_" + ConverterUtils.fixNodeIdForFileSystem(nativeNodeContainer.getID().toString()), ".zip").toFile();
+		final File miniWorkflowArchive = Files.createTempFile(sandboxDir,
+				"knimejob_" + ConverterUtils.fixNodeIdForFileSystem(nativeNodeContainer.getID().toString()), ".zip")
+				.toFile();
 		FileUtil.zipDir(miniWorkflowArchive, miniWorkflowDir, 9);
 		commandLineElements.add(new CommandLineKNIMEWorkflowFile(miniWorkflowArchive));
 		// add the zipped workflow as input
@@ -286,9 +297,11 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 		return job;
 	}
 
-	private void addFlowVariables(final NodeSettings nodeSettings, final Collection<VariableSetting> inputSettings) throws InvalidSettingsException {
+	private void addFlowVariables(final NodeSettings nodeSettings, final Collection<VariableSetting> inputSettings)
+			throws InvalidSettingsException {
 		for (final VariableSetting inputSetting : inputSettings) {
-			nodeSettings.getNodeSettings(Node.CFG_MODEL).addString(inputSetting.getSettingName(), inputSetting.getTempVariableValue());
+			nodeSettings.getNodeSettings(Node.CFG_MODEL).addString(inputSetting.getSettingName(),
+					inputSetting.getTempVariableValue());
 			final NodeSettings variableNodeSettings = nodeSettings.getNodeSettings("variables");
 			final Config flowVariableConfig = variableNodeSettings.addConfig(inputSetting.getSettingName());
 			flowVariableConfig.addString("used_variable", inputSetting.getFlowVariableName());
@@ -299,7 +312,8 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 
 	private CommandLineElement buildFilePathAsFlowVariable(final String name) {
 		// the value will be set later
-		final FileParameter fileParameter = new FileParameter(name, "if you see this, it means that the code is broken! Report this bug!");
+		final FileParameter fileParameter = new FileParameter(name,
+				"if you see this, it means that the code is broken! Report this bug!");
 		return new CommandLineFile(fileParameter, buildFlowVariablePrefix(name), FLOW_VARIABLE_SUFFIX);
 	}
 
