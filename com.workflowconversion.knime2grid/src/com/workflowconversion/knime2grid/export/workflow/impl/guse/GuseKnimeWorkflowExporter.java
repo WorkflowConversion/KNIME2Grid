@@ -21,8 +21,10 @@ package com.workflowconversion.knime2grid.export.workflow.impl.guse;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -44,7 +46,9 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang.Validate;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.knime.core.node.NodeLogger;
 import org.w3c.dom.Document;
@@ -123,7 +127,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	// 3. [any_name]/[job_name]/execute.bin - a script that executes the job, name
 	// must be execute.bin
 	// 4. [any_name]/[job_name]/[port_number]/0 - input associated with the port
-	// number [port_number], name must be 0
+	// number [port_number], name must be 0, I shit you not
 	/**
 	 * use a pre block to avoid IDE formatters breaking indentation in the shown XML
 	 * below
@@ -195,6 +199,37 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		zipOutputStream.close();
 	}
 
+	private void fixWorkflowForGuse(final Workflow workflow) {
+		final Map<String, Integer> nameOccurrenceMap = new TreeMap<String, Integer>();
+		for (final Job job : workflow.getJobs()) {
+			fixJobName(job);
+			fixDuplicateJobName(nameOccurrenceMap, job);
+		}
+	}
+
+	// remove any weird characters not allowed in job names
+	private void fixJobName(final Job job) {
+		// gUSE does not allow job names with spaces
+		// TODO: check which other restrictions job names have
+		final String name = job.getName();
+		if (name.indexOf(' ') >= 0) {
+			job.setName(name.replace(' ', '-'));
+		}
+	}
+
+	// gUSE doesn't allow duplicate in the names of jobs, so that has to be fixed
+	private void fixDuplicateJobName(final Map<String, Integer> nameOccurrenceMap, final Job job) {
+		Integer nameOccurrences = nameOccurrenceMap.get(job.getName());
+		if (nameOccurrences == null) {
+			nameOccurrences = 1;
+			nameOccurrenceMap.put(job.getName(), nameOccurrences);
+		} else {
+			final String oldName = job.getName();
+			job.setName(oldName + nameOccurrences);
+			nameOccurrenceMap.put(oldName, nameOccurrences + 1);
+		}
+	}
+
 	private void writeWorkflowDescriptor(final Workflow workflow, final ZipOutputStream zipOutputStream)
 			throws IOException, TransformerException, ParserConfigurationException {
 		final StringBuilder builder = new StringBuilder();
@@ -228,7 +263,8 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 
 	// gUSE requires an executable script named execute.bin (we use
 	// job_srapper/zip_loop_start/zip_loop_end
-	private void writeExecuteBin(final String rootEntryName, final ZipOutputStream zipOutputStream, final Job job) {
+	private void writeExecuteBin(final String rootEntryName, final ZipOutputStream zipOutputStream, final Job job)
+			throws IOException {
 		final String scriptContents;
 		switch (job.getJobType()) {
 		case Generator:
@@ -240,21 +276,61 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		default:
 			scriptContents = generateDefaultScript(job);
 		}
+		zipOutputStream.putNextEntry(new ZipEntry(rootEntryName + "execute.bin"));
+		zipOutputStream.write(scriptContents.getBytes());
+		zipOutputStream.closeEntry();
 	}
 
-	private String generateGeneratorScript(final Job job) {
-		// TODO Auto-generated method stub
-		return null;
+	private String generateGeneratorScript(final Job job) throws IOException {
+		return loadScript("zip_loop_start.sh", "@@PORT_NAME@@", job.getInputByPortNr(0).getName());
 	}
 
-	private String generateCollectorScript(final Job job) {
-		// TODO Auto-generated method stub
-		return null;
+	private String generateCollectorScript(final Job job) throws IOException {
+		return loadScript("zip_loop_end.sh", "@@BASE_PORT_NAME@@", job.getInputByPortNr(0).getName());
 	}
 
-	private String generateDefaultScript(final Job job) {
-		// TODO Auto-generated method stub
-		return null;
+	private String generateDefaultScript(final Job job) throws IOException {
+		final StringBuilder fileListInputs = new StringBuilder();
+		final StringBuilder fileListOutputs = new StringBuilder();
+
+		for (final Input input : job.getInputs()) {
+			if (input.isMultiFile()) {
+				if (fileListInputs.length() > 0) {
+					// not the first element, we can prepend a space
+					fileListInputs.append(' ');
+				}
+				fileListInputs.append(input.getName());
+			}
+		}
+		for (final Output output : job.getOutputs()) {
+			if (output.isMultiFile()) {
+				if (fileListOutputs.length() > 0) {
+					fileListOutputs.append(' ');
+				}
+				fileListOutputs.append(output.getName());
+			}
+		}
+
+		// script handles empty variables for input/output ports with filelist
+		return loadScript("job_wrapper.sh", "@@EXECUTABLE@@", job.getExecutablePath(), "@@INPUT_PORTS_WITH_FILELIST@@",
+				fileListInputs.toString(), "@@OUTPUT_PORTS_WITH_FILELIST@@", fileListOutputs.toString());
+	}
+
+	// loads a script from file,
+	// substitutions are given as varargs: key1, val1, key2, val2, key3, val3
+	private String loadScript(final String scriptName, final String... substitutions) throws IOException {
+		// at the very least check that we have an odd-numbered amount of varargs
+		Validate.isTrue(substitutions.length % 2 == 0,
+				"Substitutions are given as follows: key1, val1, key2, val2...; this is a bug!");
+		try (final InputStream scriptStream = this.getClass().getResourceAsStream(scriptName)) {
+			String scriptContents = IOUtils.toString(scriptStream, StandardCharsets.UTF_8.name());
+			// yeah, we're doing it old-school
+			for (int i = 0; i < substitutions.length; i += 2) {
+				scriptContents = scriptContents.replaceAll(substitutions[i], substitutions[i + 1]);
+			}
+			return scriptContents;
+		}
+
 	}
 
 	private boolean hasInputs(final Job job) {
@@ -429,7 +505,8 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 				inputElement.setAttribute("preoutput", preOutput);
 				inputElement.setAttribute("seq", Integer.toString(i - ignoredInputs));
 				inputElement.setAttribute("text", "Port description");
-				// FIXME: x, y for ports?
+				// FIXME: x, y for ports? These values have to be scaled, but ain't nobody got
+				// time for that
 				inputElement.setAttribute("x", Integer.toString(input.getX()));
 				inputElement.setAttribute("y", Integer.toString(input.getY()));
 
@@ -504,37 +581,6 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			builder.append(element.getStringRepresentation()).append(' ');
 		}
 		return builder.toString();
-	}
-
-	private void fixWorkflowForGuse(final Workflow workflow) {
-		final Map<String, Integer> nameOccurrenceMap = new TreeMap<String, Integer>();
-		for (final Job job : workflow.getJobs()) {
-			fixJobName(job);
-			fixDuplicateJobName(nameOccurrenceMap, job);
-		}
-	}
-
-	// remove any weird characters not allowed in job names
-	private void fixJobName(final Job job) {
-		// gUSE does not allow job names with spaces
-		// TODO: check which other restrictions job names have
-		final String name = job.getName();
-		if (name.indexOf(' ') >= 0) {
-			job.setName(name.replace(' ', '-'));
-		}
-	}
-
-	// gUSE doesn't allow duplicate in the names of jobs, so that has to be fixed
-	private void fixDuplicateJobName(final Map<String, Integer> nameOccurrenceMap, final Job job) {
-		Integer nameOccurrences = nameOccurrenceMap.get(job.getName());
-		if (nameOccurrences == null) {
-			nameOccurrences = 1;
-			nameOccurrenceMap.put(job.getName(), nameOccurrences);
-		} else {
-			final String oldName = job.getName();
-			job.setName(oldName + nameOccurrences);
-			nameOccurrenceMap.put(oldName, nameOccurrences + 1);
-		}
 	}
 
 	private void addMiddlewareSpecificProperties(final Element jobElement, final Job job) {
@@ -619,173 +665,4 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	public Collection<ExtensionFilter> getExtensionFilters() {
 		return Arrays.asList(new ExtensionFilter("*.zip", "ZIP Archive"));
 	}
-
-	// // this is just a proof of concept... check how to read these from the
-	// real
-	// // knime nodes
-	// private static class GuseProperties {
-	// private final Map<String, String> properties;
-	//
-	// GuseProperties() {
-	// properties = new TreeMap<String, String>();
-	// }
-	//
-	// void setProperty(final String name, final String value) {
-	// properties.put(name, value);
-	// }
-	//
-	// String getProperty(final String name) {
-	// return properties.get(name);
-	// }
-	//
-	// Set<String> getPropertyNames() {
-	// return new TreeSet<String>(properties.keySet());
-	// }
-	// }
-	//
-	// private static class RealInputPortProperties extends GuseProperties {
-	// RealInputPortProperties() {
-	// // preload some standards
-	// super();
-	// setProperty("eparam", "1");
-	// setProperty("waitingtmp", "all");
-	// setProperty("waiting", "all");
-	// setProperty("dpid", "0");
-	// setProperty("prequaltype", "0");
-	// }
-	//
-	// void setInternalName(final String name) {
-	// setProperty("intname", name);
-	// }
-	// }
-	//
-	// private static class RealOutputPortProperties extends GuseProperties {
-	// RealOutputPortProperties() {
-	// super();
-	// // preload some standards
-	// setProperty("maincount0", "1");
-	// setProperty("type0", "permanent");
-	// setProperty("maincount", "1");
-	// }
-	//
-	// void setInternalName(final String name) {
-	// setProperty("intname", name);
-	// }
-	// }
-	//
-	// private static class ExecutionProperties extends GuseProperties {
-	// ExecutionProperties() {
-	// super();
-	// setProperty("gridtype", "unicore");
-	// setProperty("jobistype", "binary");
-	// setProperty("resource", "hamlet.zih.tu-dresden.de:8081");
-	// setProperty("grid", "flavus.informatik.uni-tuebingen.de:8090");
-	// setProperty("type", "Sequence");
-	// }
-	//
-	// void setCommandLine(final String commandLine) {
-	// setProperty("params", commandLine);
-	// }
-	// }
-	//
-	// private static class GraphOutputPortProperties extends GuseProperties {
-	// public GraphOutputPortProperties() {
-	// super();
-	// }
-	// }
-	//
-	// private static class GraphInputPortProperties extends GuseProperties {
-	//
-	// }
-	//
-	// private static class GuseOutputPort {
-	// final RealOutputPortProperties realOutputProperties;
-	// final GraphOutputPortProperties graphOutputProperties;
-	// final Output output;
-	//
-	// GuseOutputPort(final Output output) {
-	// this.output = output;
-	// realOutputProperties = new RealOutputPortProperties();
-	// graphOutputProperties = new GraphOutputPortProperties();
-	// }
-	// }
-	//
-	// private static class GuseInputPort {
-	// final RealInputPortProperties realInputProperties;
-	// final GraphInputPortProperties graphInputProperties;
-	// final Input input;
-	//
-	// GuseInputPort(final Input input) {
-	// this.input = input;
-	// realInputProperties = new RealInputPortProperties();
-	// graphInputProperties = new GraphInputPortProperties();
-	// }
-	// }
-	//
-	// private static class GuseGraphJob {
-	// Collection<Guse>
-	// }
-	//
-	// private static class GuseConcreteJob {
-	// final ExecutionProperties executionProperties;
-	// final RealInputPortProperties realInputProperties;
-	// final RealOutputPortProperties realOutputProperties;
-	// final Job job;
-	//
-	// GuseConcreteJob(final Job job) {
-	// this.job = job;
-	// executionProperties = new ExecutionProperties();
-	// realInputProperties = new RealInputPortProperties();
-	// realOutputProperties = new RealOutputPortProperties();
-	// }
-	// }
-	//
-	// private static class GuseGraphSection {
-	// final GuseProperties properties;
-	// Collection<GuseGraphJob> jobs;
-	//
-	// GuseGraphSection(final String name, final String description) {
-	// jobs = new LinkedList<GuseKnimeWorkflowExporter.GuseGraphJob>();
-	// properties = new GuseProperties();
-	// properties.setProperty("name", name);
-	// properties.setProperty("text", description);
-	// }
-	//
-	// void addJob(final GuseGraphJob job) {
-	// jobs.add(job);
-	// }
-	// }
-	//
-	// private static class GuseConcreteSection {
-	//
-	// }
-	//
-	// private static class GuseWorkflow implements GuseElement{
-	// final Collection<GuseConcreteJob> concreteJobs;
-	// final GuseGraphSection
-	// final GuseProperties properties;
-	//
-	// GuseWorkflow(final String name) {
-	// concreteJobs = new
-	// LinkedList<GuseKnimeWorkflowExporter.GuseConcreteJob>();
-	// graphJobs = new LinkedList<GuseKnimeWorkflowExporter.GuseGraphJob>();
-	// properties = new GuseProperties();
-	// properties.setProperty("download", "all");
-	// properties.setProperty("export", "work");
-	// properties.setProperty("mainabst", "");
-	// properties.setProperty("name", name);
-	// properties.setProperty("maingraf", name);
-	// properties.setProperty("mainreal", name);
-	// }
-	//
-	// void addConcreteJob(final GuseConcreteJob job) {
-	// concreteJobs.add(job);
-	// }
-	//
-	// void addGraphJob(final GuseGraphJob job) {
-	// graphJobs.add(job);
-	// }
-	//
-	// }
-
 }
