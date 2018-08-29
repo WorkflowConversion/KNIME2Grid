@@ -20,6 +20,7 @@ import org.knime.core.data.uri.IURIPortObject;
 import org.knime.core.data.uri.URIContent;
 import org.knime.core.data.uri.URIPortObjectSpec;
 import org.knime.core.node.Node;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.workflow.ConnectionContainer;
 import org.knime.core.node.workflow.NativeNodeContainer;
 import org.knime.core.node.workflow.NodeID;
@@ -39,6 +40,7 @@ import com.genericworkflownodes.knime.parameter.FileParameter;
 import com.genericworkflownodes.knime.parameter.IFileParameter;
 import com.genericworkflownodes.knime.parameter.Parameter;
 import com.genericworkflownodes.knime.port.Port;
+import com.workflowconversion.knime2grid.exception.ApplicationException;
 import com.workflowconversion.knime2grid.export.node.NodeContainerConverter;
 import com.workflowconversion.knime2grid.export.workflow.ConverterUtils;
 import com.workflowconversion.knime2grid.model.ConnectionType;
@@ -53,6 +55,8 @@ import com.workflowconversion.knime2grid.model.Output;
  * @author delagarza
  */
 public class GenericKnimeNodeConverter implements NodeContainerConverter {
+
+	private static final NodeLogger LOGGER = NodeLogger.getLogger(GenericKnimeNodeConverter.class);
 
 	@Override
 	public boolean canHandle(final NativeNodeContainer nativeNodeContainer) {
@@ -90,17 +94,17 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 			if (element instanceof CommandLineCTDFile) {
 				// create an input for the ctd file
 				if (ctdFound) {
-					throw new IllegalStateException(
+					throw new ApplicationException(
 							"This job already has a CTD file. Only one CTD file per job is allowed. This is probably a bug and should be reported.");
 				}
 				addCTDInputPort(workflowManager, (CommandLineCTDFile) element, job, nodeConfiguration, nativeNodeContainer);
 				ctdFound = true;
 			} else if (element instanceof ParametrizedCommandLineElement && !processedPortNames.contains(element.getKey())) {
-				// we need to process only true parameters, not flags or option
-				// identifiers
+				// we need to process only true parameters, not flags or option identifiers
 				final Parameter<?> parameter = nodeConfiguration.getParameter(element.getKey());
 				job.addParameter(element.getKey(), parameter.getStringRep());
 			} else if (element instanceof CommandLineFile) {
+				// TODO: this seems to be dead code... only elements in the command line are the CTD and the flag...
 				// fix the given paths for export
 				final CommandLineFile commandLineFile = (CommandLineFile) element;
 				final FileParameter fileParameter = commandLineFile.getValue();
@@ -122,12 +126,13 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 			final INodeConfiguration nodeConfiguration, final Job job, final Set<String> processedPortNames) {
 		for (final ConnectionContainer connectionContainer : workflowManager.getIncomingConnectionsFor(nativeNodeContainer.getID())) {
 			final NodeID sourceNodeId = connectionContainer.getSource();
+			final Node sourceNode = ((NativeNodeContainer) workflowManager.getNodeContainer(connectionContainer.getSource())).getNode();
 			final int destPortNr = connectionContainer.getDestPort();
 			final Port destPort = nodeConfiguration.getInputPorts().get(ConverterUtils.convertFromKnimePort(destPortNr));
 			final Input input = new Input();
 			input.setSourceId(sourceNodeId);
 			input.setOriginalPortNr(destPortNr);
-			input.setName(destPort.getName());
+			input.setName(destPort.getName() + getExtensionForPort(sourceNode, connectionContainer.getSourcePort()));
 			input.setMultiFile(destPort.isMultiFile());
 			job.addInput(input);
 
@@ -139,8 +144,9 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 				// first time we see the output, we need to add it
 				final Port sourcePort = nodeConfiguration.getOutputPorts().get(ConverterUtils.convertFromKnimePort(sourcePortNr));
 				final Output newOutput = new Output();
+				final Node sourceNode = ((NativeNodeContainer) workflowManager.getNodeContainer(connectionContainer.getSource())).getNode();
 				newOutput.setMultiFile(sourcePort.isMultiFile());
-				newOutput.setName(sourcePort.getName());
+				newOutput.setName(sourcePort.getName() + getExtensionForPort(sourceNode, connectionContainer.getSourcePort()));
 				newOutput.setOriginalPortNr(sourcePortNr);
 				job.addOutput(newOutput);
 				processedPortNames.add(sourcePort.getName());
@@ -148,24 +154,21 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 		}
 	}
 
-	// when executing GKN in KNIME, each GKN generates an "on the fly" CTD file
-	// and
-	// uses it to
-	// execute the associated binary, but what we need here is to add a new
-	// input
-	// containing a CTD
+	// when executing GKN in KNIME, each GKN generates an "on the fly" CTD file and uses it to
+	// execute the associated binary, but what we need here is to add a new input containing a CTD
 	private void addCTDInputPort(final WorkflowManager workflowManager, final CommandLineCTDFile element, final Job job,
 			final INodeConfiguration nodeConfiguration, final NativeNodeContainer nativeNodeContainer) throws IOException, InvalidCTDFileException {
 		final Input ctdInput = new Input();
-		ctdInput.setName("ctd-input");
+		ctdInput.setName(CommandLineCTDFile.CTD_FILE_KEY);
 		ctdInput.setConnectionType(ConnectionType.UserProvided);
 		// write out the ctd into a file and fix the inputs and outputs
 		// we should not modify the node configuration because this will affect future runs of the workflow!
 		final INodeConfiguration clonedNodeConfiguration = cloneNodeConfiguration(nodeConfiguration);
 		fixFilenamesInConfiguration(workflowManager, clonedNodeConfiguration, nativeNodeContainer);
 		// set the fixed CTD as data for this input
-		final FileParameter ctdFileParameter = new FileParameter("ctdfile", dumpConfiguration(clonedNodeConfiguration).getCanonicalPath());
-		ctdInput.setData(ctdFileParameter);
+		final FileParameter ctdFileParameter = new FileParameter(CommandLineCTDFile.CTD_FILE_KEY,
+				dumpConfiguration(clonedNodeConfiguration).getCanonicalPath());
+		ctdInput.setAssociatedFileParameter(ctdFileParameter);
 		job.addInput(ctdInput);
 		// fix the command line element!
 		element.setValue(ctdFileParameter);
@@ -192,10 +195,8 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 		return reader.read(inputStream);
 	}
 
-	// the inputs/outputs of the original CTD contain absolute filenames... this
-	// method will "fix" those
-	// names and transform each filename to a relative path and will also
-	// include
+	// the inputs/outputs of the original CTD contain absolute filenames... this method will "fix" those
+	// names and transform each filename to a relative path and will also include
 	// the name of the input/output port, for instance:
 	//
 	// original value for input named "ligands" with extension "sdf":
@@ -306,7 +307,6 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 	}
 
 	private void transferToNodeConfiguration(final INodeConfiguration nodeConfiguration, final Node sourceNode, final int sourcePortNr, final Port targetPort) {
-		// try to use the PortObject
 		final IURIPortObject portObject = (IURIPortObject) sourceNode.getOutputObject(sourcePortNr);
 		if (portObject != null) {
 			final List<URIContent> uriContents = portObject.getURIContents();
@@ -336,6 +336,18 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 				((FileParameter) nodeConfiguration.getParameter(targetPort.getName())).setValue(filename);
 			}
 		}
+	}
+
+	// PortObjects are available only through output ports, so we need the source node/port to retrieve the extension
+	private String getExtensionForPort(final Node sourceNode, final int sourcePortNr) {
+		final IURIPortObject portObject = (IURIPortObject) sourceNode.getOutputObject(sourcePortNr);
+		final List<URIContent> uriContents = portObject.getURIContents();
+		if (uriContents != null && !uriContents.isEmpty()) {
+			return uriContents.get(0).getExtension();
+		}
+
+		LOGGER.error(String.format("Could not find extension for node %s at port number %d", sourceNode.getName(), sourcePortNr));
+		return "";
 	}
 
 	private class PortWrapper {

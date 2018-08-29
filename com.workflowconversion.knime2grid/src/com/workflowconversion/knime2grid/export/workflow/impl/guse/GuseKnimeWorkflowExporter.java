@@ -30,7 +30,6 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -52,7 +51,6 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.Validate;
@@ -63,7 +61,6 @@ import org.w3c.dom.Element;
 
 import com.genericworkflownodes.knime.commandline.CommandLineElement;
 import com.genericworkflownodes.knime.parameter.FileListParameter;
-import com.genericworkflownodes.knime.parameter.FileParameter;
 import com.genericworkflownodes.knime.parameter.IFileParameter;
 import com.workflowconversion.knime2grid.KnimeWorkflowExporterActivator;
 import com.workflowconversion.knime2grid.exception.ApplicationException;
@@ -84,8 +81,14 @@ import com.workflowconversion.knime2grid.resource.Application;
  */
 public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 
-	private final static NodeLogger LOGGER = NodeLogger.getLogger(GuseKnimeWorkflowExporter.class);
-	private final static char ZIP_ENTRY_SEPARATOR = '/';
+	private static final String EXECUTABLE_SCRIPT_KEY = "@@EXECUTABLE@@";
+	private static final String INPUT_PORTS_WITH_FILELIST_SCRIPT_KEY = "@@INPUT_PORTS_WITH_FILELIST@@";
+	private static final String OUTPUT_PORTS_WITH_FILELIST_SCRIPT_KEY = "@@OUTPUT_PORTS_WITH_FILELIST@@";
+	private static final String COMMAND_LINE_PARAMETERS_SCRIPT_KEY = "@@COMMAND_LINE_PARAMETERS@@";
+	private static final String QUOTE_REGEX = "\"";
+	private static final String QUOTE_REPLACEMENT_FOR_BASH_SCRIPT = "\\\"";
+	private static final NodeLogger LOGGER = NodeLogger.getLogger(GuseKnimeWorkflowExporter.class);
+	private static final char ZIP_ENTRY_SEPARATOR = '/';
 
 	/*
 	 * (non-Javadoc)
@@ -202,7 +205,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		zipOutputStream.close();
 	}
 
-	// check that all ports have been assigned
+	// check that all input ports have been assigned
 	private void validateWorkflow(final Workflow workflow) {
 		for (final Job job : workflow.getJobs()) {
 			// unassigned inputs are tricky, but unassigned outputs are irrelevant anyway
@@ -244,8 +247,6 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			nameOccurrenceMap.put(oldName, nameOccurrences + 1);
 		}
 	}
-
-	// gUSE requires ports to match the filenames, so we need to
 
 	private void writeWorkflowDescriptor(final Workflow workflow, final ZipOutputStream zipOutputStream)
 			throws IOException, TransformerException, ParserConfigurationException {
@@ -325,9 +326,11 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			}
 		}
 
-		// script handles empty variables for input/output ports with filelist
-		return loadScript("job_wrapper.sh", "@@EXECUTABLE@@", job.getRemoteApplication().getPath(), "@@INPUT_PORTS_WITH_FILELIST@@", fileListInputs.toString(),
-				"@@OUTPUT_PORTS_WITH_FILELIST@@", fileListOutputs.toString());
+		// script handles empty variables for input/output ports with filelist, make sure to escape the command line,
+		// which is not 100% under the control of this class
+		return loadScript("job_wrapper.sh", EXECUTABLE_SCRIPT_KEY, job.getRemoteApplication().getPath(), INPUT_PORTS_WITH_FILELIST_SCRIPT_KEY,
+				fileListInputs.toString(), OUTPUT_PORTS_WITH_FILELIST_SCRIPT_KEY, fileListOutputs.toString(), COMMAND_LINE_PARAMETERS_SCRIPT_KEY,
+				generateCommandLine(job).replace(QUOTE_REGEX, QUOTE_REPLACEMENT_FOR_BASH_SCRIPT));
 	}
 
 	// loads a script from file,
@@ -339,7 +342,8 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			String scriptContents = IOUtils.toString(scriptStream, StandardCharsets.UTF_8.name());
 			// yeah, we're doing it old-school
 			for (int i = 0; i < substitutions.length; i += 2) {
-				scriptContents = scriptContents.replaceAll(substitutions[i], substitutions[i + 1]);
+				//
+				scriptContents = scriptContents.replace(substitutions[i], substitutions[i + 1]);
 			}
 			return scriptContents;
 		}
@@ -376,12 +380,12 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			zipOutputStream.write(getFileListAsArchiveBytes(input));
 
 		} else {
-			zipOutputStream.write(Files.readAllBytes(Paths.get(((FileParameter) input.getData()).getValue())));
+			zipOutputStream.write(Files.readAllBytes(input.getAssociatedFiles().get(0).toPath()));
 		}
 	}
 
 	private byte[] getFileListAsArchiveBytes(final Input input) throws IOException {
-		final FileListParameter data = (FileListParameter) input.getData();
+		final FileListParameter data = (FileListParameter) input.getAssociatedFileParameter();
 
 		final ByteArrayOutputStream rawOutputStream = new ByteArrayOutputStream(4096);
 		final GZIPOutputStream gzOutputStream = new GZIPOutputStream(new BufferedOutputStream(rawOutputStream));
@@ -428,7 +432,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 
 		final Element workflowElement = document.createElement("workflow");
 		document.appendChild(workflowElement);
-		final String workflowName = workflow.getName() + "KNIME_export_";
+		final String workflowName = workflow.getName() + "_KNIME_export";
 		workflowElement.setAttribute("download", "all");
 		workflowElement.setAttribute("export", "proj");
 		workflowElement.setAttribute("mainabst", "");
@@ -492,10 +496,11 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			jobElement.setAttribute("name", job.getName());
 			jobElement.setAttribute("text", job.getDescription());
 			jobElement.setAttribute("x", Integer.toString(job.getX()));
-			jobElement.setAttribute("y", Integer.toBinaryString(job.getY()));
+			jobElement.setAttribute("y", Integer.toString(job.getY()));
 
 			addExecutionProperty(jobElement, "type", "Sequence");
-			addExecutionProperty(jobElement, "params", generateCommandLine(job));
+			// parameters are given direclty in the script
+			addExecutionProperty(jobElement, "params", "");
 			addExecutionProperty(jobElement, "jobistype", "binary");
 			addMiddlewareSpecificProperties(jobElement, job);
 
@@ -503,13 +508,12 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			for (final Input input : job.getInputs()) {
 				final Element inputElement = document.createElement("input");
 				jobElement.appendChild(inputElement);
-				inputElement.setAttribute("name", input.getName());
+				inputElement.setAttribute("name", fixPortName(input));
 				inputElement.setAttribute("prejob", getPreJob(workflow, input));
 				inputElement.setAttribute("preoutput", getPreOutput(input));
 				inputElement.setAttribute("seq", Integer.toString(input.getPortNr()));
 				inputElement.setAttribute("text", "Port description");
-				// FIXME: x, y for ports? These values have to be scaled, but ain't nobody got
-				// time for that
+				// FIXME: x, y for ports? These values have to be scaled, but ain't nobody got time for that
 				inputElement.setAttribute("x", Integer.toString(input.getX()));
 				inputElement.setAttribute("y", Integer.toString(input.getY()));
 
@@ -571,23 +575,33 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	// gUSE requires port names to match the associated filename (including extension)
 	// our zip_loop_start/end scripts depend on the use of '_'
 	private String fixPortName(final Port port) {
-		final IFileParameter associatedFile = port.getData();
+		final IFileParameter associatedFile = port.getAssociatedFileParameter();
 		String fixedPortName = port.getName();
-		if (associatedFile != null) {
-			if (associatedFile instanceof FileParameter) {
-				fixedPortName += '.' + FilenameUtils.getExtension(((FileParameter) associatedFile).getValue());
-			} else if (associatedFile instanceof FileListParameter) {
-				// guse doesn't support file lists, so we will provide an archive
-				fixedPortName += ".tar.gz";
-			}
+		// null is handled safely by instanceof
+		if (associatedFile instanceof FileListParameter) {
+			fixedPortName += ".tar.gz";
 		}
+		// if (associatedFile != null) {
+		// if (associatedFile instanceof FileParameter) {
+		// fixedPortName += '.' + FilenameUtils.getExtension(((FileParameter) associatedFile).getValue());
+		// } else if (associatedFile instanceof FileListParameter) {
+		// // guse doesn't support file lists, so we will provide an archive
+		// fixedPortName += ".tar.gz";
+		// }
+		// }
 		return fixedPortName;
 	}
 
 	private String generateCommandLine(final Job job) {
 		final StringBuilder builder = new StringBuilder();
+		boolean firstCommand = true;
 		for (final CommandLineElement element : job.getCommandLine()) {
-			builder.append(element.getStringRepresentation()).append(' ');
+			if (!firstCommand) {
+				// prepend a space for the 2nd, 3rd, ... parameters
+				builder.append(' ');
+			}
+			builder.append(element.getExternalStringRepresentation());
+			firstCommand = false;
 		}
 		return builder.toString();
 	}

@@ -179,7 +179,7 @@ public class InternalModelConverter {
 					// TODO: what a hack!
 					input.setMultiFile(inputData instanceof FileListParameter);
 					input.setConnectionType(ConnectionType.UserProvided);
-					input.setData(inputData);
+					input.setAssociatedFileParameter(inputData);
 				}
 			}
 		}

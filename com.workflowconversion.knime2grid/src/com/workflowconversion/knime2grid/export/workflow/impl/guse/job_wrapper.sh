@@ -6,6 +6,7 @@ INPUT_PORTS_WITH_FILELIST="@@INPUT_PORTS_WITH_FILELIST@@"
 # contains names of output ports that generate filelists, separated by whitespace
 OUTPUT_PORTS_WITH_FILELIST="@@OUTPUT_PORTS_WITH_FILELIST@@"
 EXECUTABLE="@@EXECUTABLE@@"
+COMMAND_LINE_PARAMETERS="@@COMMAND_LINE_PARAMETERS@@"
 
 if [ -n "$INPUT_PORTS_WITH_FILELIST" ]; then
 	for input_port in ${INPUT_PORTS_WITH_FILELIST}; do
@@ -15,8 +16,8 @@ if [ -n "$INPUT_PORTS_WITH_FILELIST" ]; then
 fi
 
 # execute the tool
-echo "Executing: ${EXECUTABLE} $@"
-${EXECUTABLE} $@
+echo "Executing: ${EXECUTABLE} ${COMMAND_LINE_PARAMETERS}"
+${EXECUTABLE} ${COMMAND_LINE_PARAMETERS}
 
 # compress the multi-file outputs and make sure to name the archive using port name and .tar.gz as extension
 # see: com.workflowconversion.knime2grid.export.workflow.ConverterUtils.generateFileNameForExport(String, String, int) and

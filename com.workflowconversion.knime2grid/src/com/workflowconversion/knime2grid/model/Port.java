@@ -1,8 +1,14 @@
 package com.workflowconversion.knime2grid.model;
 
+import java.io.File;
+import java.util.ArrayList;
+
 import org.apache.commons.lang.Validate;
 
+import com.genericworkflownodes.knime.parameter.FileListParameter;
+import com.genericworkflownodes.knime.parameter.FileParameter;
 import com.genericworkflownodes.knime.parameter.IFileParameter;
+import com.workflowconversion.knime2grid.exception.ApplicationException;
 
 public abstract class Port implements GraphicElement {
 
@@ -11,9 +17,10 @@ public abstract class Port implements GraphicElement {
 	private int y;
 	// port name
 	private String name;
-	// while some ports receive/generate data through channels, some of them
-	// already contain the data
-	private IFileParameter data;
+	// IFileParameter instances do not contain the file itself, rather, just a String with the path (or URI)
+	private IFileParameter associatedFileParameter;
+	private final ArrayList<File> associatedFiles = new ArrayList<>();
+
 	// the original index of this port in the KNIME node
 	private int originalPortNr;
 	// the port number in the job
@@ -26,6 +33,7 @@ public abstract class Port implements GraphicElement {
 	/**
 	 * @return the x
 	 */
+	@Override
 	public int getX() {
 		return x;
 	}
@@ -34,13 +42,15 @@ public abstract class Port implements GraphicElement {
 	 * @param x
 	 *            the x to set
 	 */
-	public void setX(int x) {
+	@Override
+	public void setX(final int x) {
 		this.x = x;
 	}
 
 	/**
 	 * @return the y
 	 */
+	@Override
 	public int getY() {
 		return y;
 	}
@@ -49,7 +59,8 @@ public abstract class Port implements GraphicElement {
 	 * @param y
 	 *            the y to set
 	 */
-	public void setY(int y) {
+	@Override
+	public void setY(final int y) {
 		this.y = y;
 	}
 
@@ -64,7 +75,7 @@ public abstract class Port implements GraphicElement {
 	 * @param name
 	 *            the name to set
 	 */
-	public void setName(String name) {
+	public void setName(final String name) {
 		Validate.notEmpty(name, "name cannot be null or empty");
 		Validate.notEmpty(name.trim(), "name cannot contain only whitespace");
 		this.name = name;
@@ -73,17 +84,39 @@ public abstract class Port implements GraphicElement {
 	/**
 	 * @return the data
 	 */
-	public IFileParameter getData() {
-		return data;
+	public IFileParameter getAssociatedFileParameter() {
+		return associatedFileParameter;
 	}
 
 	/**
-	 * @param data
+	 * @param associatedFileParameter
 	 *            the data to set
 	 */
-	public void setData(IFileParameter data) {
-		Validate.notNull(data, "data is required and cannot be null");
-		this.data = data;
+	public void setAssociatedFileParameter(final IFileParameter associatedFileParameter) {
+		Validate.notNull(associatedFileParameter, "data is required and cannot be null");
+		this.associatedFileParameter = associatedFileParameter;
+		updateAssociatedFiles();
+	}
+
+	private void updateAssociatedFiles() {
+		associatedFiles.clear();
+		if (associatedFileParameter instanceof FileParameter) {
+			associatedFiles.add(new File(((FileParameter) associatedFileParameter).getValue()));
+		} else if (associatedFileParameter instanceof FileListParameter) {
+			for (final String filePath : ((FileListParameter) associatedFileParameter).getValue()) {
+				associatedFiles.add(new File(filePath));
+			}
+		} else {
+			throw new ApplicationException(
+					String.format("Unrecognized file parameter type: %s. This is a bug and should be reported.", this.associatedFileParameter.getClass()));
+		}
+	}
+
+	/**
+	 * @return the associated files to this port.
+	 */
+	public ArrayList<File> getAssociatedFiles() {
+		return new ArrayList<>(associatedFiles);
 	}
 
 	/**
@@ -97,7 +130,7 @@ public abstract class Port implements GraphicElement {
 	 * @param originalPortNr
 	 *            the originalPortNr to set
 	 */
-	public void setOriginalPortNr(int originalPortNr) {
+	public void setOriginalPortNr(final int originalPortNr) {
 		this.originalPortNr = originalPortNr;
 	}
 
@@ -112,7 +145,7 @@ public abstract class Port implements GraphicElement {
 	 * @param portNr
 	 *            the portNr to set
 	 */
-	public void setPortNr(int portNr) {
+	public void setPortNr(final int portNr) {
 		this.portNr = portNr;
 	}
 
@@ -127,7 +160,7 @@ public abstract class Port implements GraphicElement {
 	 * @param connectionType
 	 *            the connectionType to set
 	 */
-	public void setConnectionType(ConnectionType connectionType) {
+	public void setConnectionType(final ConnectionType connectionType) {
 		this.connectionType = connectionType;
 	}
 
@@ -142,7 +175,7 @@ public abstract class Port implements GraphicElement {
 	 * @param multiFile
 	 *            the multiFile to set
 	 */
-	public void setMultiFile(boolean multiFile) {
+	public void setMultiFile(final boolean multiFile) {
 		this.multiFile = multiFile;
 	}
 
