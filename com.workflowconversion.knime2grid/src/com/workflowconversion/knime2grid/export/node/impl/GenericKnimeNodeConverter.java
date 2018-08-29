@@ -339,11 +339,12 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 	}
 
 	// PortObjects are available only through output ports, so we need the source node/port to retrieve the extension
+	// includes the '.' before the extension!
 	private String getExtensionForPort(final Node sourceNode, final int sourcePortNr) {
 		final IURIPortObject portObject = (IURIPortObject) sourceNode.getOutputObject(sourcePortNr);
 		final List<URIContent> uriContents = portObject.getURIContents();
 		if (uriContents != null && !uriContents.isEmpty()) {
-			return uriContents.get(0).getExtension();
+			return '.' + uriContents.get(0).getExtension();
 		}
 
 		LOGGER.error(String.format("Could not find extension for node %s at port number %d", sourceNode.getName(), sourcePortNr));
