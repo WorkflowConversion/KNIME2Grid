@@ -73,7 +73,7 @@ public class ApplicationSelectionPage extends WizardPage {
 				ImageRepository.getImageDescriptor(SharedImages.Node));
 		Validate.notNull(workflow, "workflow is required and cannot be null");
 
-		this.allLocalJobs = workflow.getJobs().toArray(new Job[] {});
+		this.allLocalJobs = workflow.getJobs().toArray(new Job[]{});
 		currentRemoteApplications = new ArrayList<Application>();
 	}
 
@@ -129,8 +129,8 @@ public class ApplicationSelectionPage extends WizardPage {
 		localToRemoteLayoutData.heightHint = 200;
 		localToRemoteTable.setLayoutData(localToRemoteLayoutData);
 
-		final String[] columnTitles = { "Local Application", "Remote Application", "Queue" };
-		final int[] columnWidths = { 250, 350, 250 };
+		final String[] columnTitles = {"Local Application", "Remote Application", "Queue"};
+		final int[] columnWidths = {250, 350, 250};
 		for (int i = 0; i < columnTitles.length; i++) {
 			final TableColumn column = new TableColumn(localToRemoteTable, SWT.NONE);
 			column.setText(columnTitles[i]);
@@ -163,8 +163,7 @@ public class ApplicationSelectionPage extends WizardPage {
 		for (int i = 0; i < allLocalJobs.length; i++) {
 			if (displayInConversionTable(allLocalJobs[i])) {
 				final TableItem row = new TableItem(localToRemoteTable, SWT.BORDER);
-				row.setText(LOCAL_JOB_COLUMN_INDEX,
-						String.format("%s (id: %s)", allLocalJobs[i].getName(), allLocalJobs[i].getId().toString()));
+				row.setText(LOCAL_JOB_COLUMN_INDEX, String.format("%s (id: %s)", allLocalJobs[i].getName(), allLocalJobs[i].getId().toString()));
 				row.setData(LOCAL_JOB_NAME_KEY, allLocalJobs[i].getName());
 				row.setData(JOB_INDEX_KEY, i);
 			}
@@ -199,15 +198,13 @@ public class ApplicationSelectionPage extends WizardPage {
 						if (selectedIndex >= 0) {
 							final Application selectedRemoteApplication = currentRemoteApplications.get(selectedIndex);
 							final Resource selectedRemoteResource = selectedRemoteApplication.getOwningResource();
-							final Resource previouslySelectedRemoteResource = (Resource) tableItems[itemIndex]
-									.getData(SELECTED_REMOTE_RESOURCE_KEY);
+							final Resource previouslySelectedRemoteResource = (Resource) tableItems[itemIndex].getData(SELECTED_REMOTE_RESOURCE_KEY);
 							if (previouslySelectedRemoteResource != selectedRemoteResource) {
 								// app from a different cluster was selected, we need to update queues
 								remoteQueueCombo.removeAll();
 								remoteQueueCombo.setText("Remote queue");
 								for (final Queue queue : selectedRemoteResource.getQueues()) {
-									remoteQueueCombo.add(String.format("%s (%s)", queue.getName(),
-											selectedRemoteResource.getName()));
+									remoteQueueCombo.add(String.format("%s (%s)", queue.getName(), selectedRemoteResource.getName()));
 								}
 
 								tableItems[itemIndex].setData(SELECTED_REMOTE_RESOURCE_KEY, selectedRemoteResource);
@@ -249,8 +246,8 @@ public class ApplicationSelectionPage extends WizardPage {
 				if (e.getSource() == browseButton) {
 					final FileDialog fileDialog = new FileDialog(getShell(), SWT.OPEN);
 					fileDialog.setText("Specify the location of a valid resources.xml file");
-					fileDialog.setFilterExtensions(new String[] { "*.xml" });
-					fileDialog.setFilterNames(new String[] { "XML Documents" });
+					fileDialog.setFilterExtensions(new String[]{"*.xml"});
+					fileDialog.setFilterNames(new String[]{"XML Documents"});
 
 					final String filePath = fileDialog.open();
 					if (StringUtils.isNotBlank(filePath)) {
@@ -304,8 +301,7 @@ public class ApplicationSelectionPage extends WizardPage {
 					LOG.info("Saving selected remote applications");
 					boolean remoteKnimeApRowFound = false;
 					for (int i = 0; i < tableItems.length; i++) {
-						final CCombo remoteApplicationCombo = (CCombo) tableItems[i]
-								.getData(REMOTE_APPLICATION_COMBO_KEY);
+						final CCombo remoteApplicationCombo = (CCombo) tableItems[i].getData(REMOTE_APPLICATION_COMBO_KEY);
 						final int selectedRemoteApplicationIndex = remoteApplicationCombo.getSelectionIndex();
 
 						final CCombo remoteQueuesCombo = (CCombo) tableItems[i].getData(REMOTE_QUEUE_COMBO_KEY);
@@ -318,8 +314,7 @@ public class ApplicationSelectionPage extends WizardPage {
 
 						Queue selectedRemoteQueue = null;
 						if (selectedRemoteQueueIndex >= 0) {
-							final Queue[] availableRemoteQueues = selectedRemoteApplication.getOwningResource()
-									.getQueues().toArray(new Queue[] {});
+							final Queue[] availableRemoteQueues = selectedRemoteApplication.getOwningResource().getQueues().toArray(new Queue[]{});
 							selectedRemoteQueue = availableRemoteQueues[selectedRemoteQueueIndex];
 						}
 
@@ -393,8 +388,8 @@ public class ApplicationSelectionPage extends WizardPage {
 			// something went wrong, somehow... but it isn't that bad anyway
 			LOG.warn("Could not find a single match between application names. This is an interesting bug, indeed.");
 		} else {
-			LOG.infoWithFormat("Best match for local job '%s' was '%s' (distance=%d)", row.getData(LOCAL_JOB_NAME_KEY),
-					combo.getItem(bestMatchIndex), bestDistance);
+			LOG.infoWithFormat("Best match for local job '%s' was '%s' (distance=%d)", row.getData(LOCAL_JOB_NAME_KEY), combo.getItem(bestMatchIndex),
+					bestDistance);
 			combo.select(bestMatchIndex);
 		}
 	}

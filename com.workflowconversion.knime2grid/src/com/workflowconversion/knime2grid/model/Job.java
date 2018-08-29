@@ -32,15 +32,13 @@ import com.workflowconversion.knime2grid.resource.Application;
 import com.workflowconversion.knime2grid.resource.Queue;
 
 /**
- * This a simple object that contains all information related to a single job.
- * Not all of the fields will be known at instantiation, so as the conversion
- * advances, different fields will be populated (e.g., fields such as {@link #x}
- * or {@link #y} depend on the target platform).
+ * This a simple object that contains all information related to a single job. Not all of the fields will be known at
+ * instantiation, so as the conversion advances, different fields will be populated (e.g., fields such as {@link #x} or
+ * {@link #y} depend on the target platform).
  * 
- * It's worth noting that instances of this class don't <i>know</i> how to
- * generate the command line needed to execute them, rather, this is set by an
- * external process, due to the fact that the command line depends on the type
- * of Job (i.e., if this is a GKN job, it'll look different than a KNIME job).
+ * It's worth noting that instances of this class don't <i>know</i> how to generate the command line needed to execute
+ * them, rather, this is set by an external process, due to the fact that the command line depends on the type of Job
+ * (i.e., if this is a GKN job, it'll look different than a KNIME job).
  * 
  * @author Luis de la Garza
  */
@@ -121,18 +119,22 @@ public class Job implements GraphicElement {
 	}
 
 	public void addInput(final Input input) {
-		if (inputsByName.put(input.getName(), input) != null) {
+		final int portNr = getNextPortNumber();
+
+		if (inputsByName.containsKey(input.getName())) {
 			throw new InvalidParameterException("This job already has an input named: " + input.getName());
 		}
-		final int portNr = inputsByPortNr.size();
-		if (inputsByPortNr.put(portNr, input) != null) {
+		if (inputsByPortNr.containsKey(portNr)) {
 			throw new InvalidParameterException("This job already has an input with the port number: " + portNr);
 		}
-		input.setPortNr(portNr);
-		if (inputsByOriginalPortNr.put(input.getOriginalPortNr(), input) != null) {
-			throw new InvalidParameterException(
-					"This job already has an input with the original port number: " + input.getOriginalPortNr());
+		if (inputsByOriginalPortNr.containsKey(input.getOriginalPortNr())) {
+			throw new InvalidParameterException("This job already has an input with the original port number: " + input.getOriginalPortNr());
 		}
+
+		input.setPortNr(portNr);
+		inputsByName.put(input.getName(), input);
+		inputsByPortNr.put(portNr, input);
+		inputsByOriginalPortNr.put(input.getOriginalPortNr(), input);
 	}
 
 	public Input getInputByName(final String inputName) {
@@ -160,18 +162,26 @@ public class Job implements GraphicElement {
 	}
 
 	public void addOutput(final Output output) {
-		if (outputsByName.put(output.getName(), output) != null) {
+		final int portNr = getNextPortNumber();
+		if (outputsByName.containsKey(output.getName())) {
 			throw new InvalidParameterException("This job already has an input named: " + output.getName());
 		}
-		final int portNr = outputsByPortNr.size();
-		if (outputsByPortNr.put(portNr, output) != null) {
+		if (outputsByPortNr.containsKey(portNr)) {
 			throw new InvalidParameterException("This job already has an input with the port number: " + portNr);
 		}
-		output.setPortNr(portNr);
-		if (outputsByOriginalPortNr.put(output.getOriginalPortNr(), output) != null) {
-			throw new InvalidParameterException(
-					"This job already has an input with the original port number: " + output.getOriginalPortNr());
+		if (outputsByOriginalPortNr.containsKey(output.getOriginalPortNr())) {
+			throw new InvalidParameterException("This job already has an input with the original port number: " + output.getOriginalPortNr());
 		}
+
+		output.setPortNr(portNr);
+		outputsByName.put(output.getName(), output);
+		outputsByPortNr.put(portNr, output);
+		outputsByOriginalPortNr.put(output.getOriginalPortNr(), output);
+	}
+
+	private int getNextPortNumber() {
+		// gUSE requires absolute port numbers, there are no specific input/output port numbers
+		return inputsByPortNr.size() + outputsByPortNr.size();
 	}
 
 	public Output getOutputByPortNr(final int portNr) {
@@ -270,8 +280,8 @@ public class Job implements GraphicElement {
 
 	@Override
 	public String toString() {
-		return "Job [id=" + id + ", name=" + name + ", description=" + description + ", remoteApplication="
-				+ associatedApplication + ", remoteQueue=" + remoteQueue + "]";
+		return "Job [id=" + id + ", name=" + name + ", description=" + description + ", remoteApplication=" + associatedApplication + ", remoteQueue="
+				+ remoteQueue + "]";
 	}
 
 }

@@ -73,6 +73,7 @@ import com.workflowconversion.knime2grid.model.Output;
 import com.workflowconversion.knime2grid.model.Port;
 import com.workflowconversion.knime2grid.model.Workflow;
 import com.workflowconversion.knime2grid.resource.Application;
+import com.workflowconversion.knime2grid.resource.Resource;
 
 /**
  * Exports KNIME workflows to WS-PGRADE format.
@@ -87,6 +88,8 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	private static final String COMMAND_LINE_PARAMETERS_SCRIPT_KEY = "@@COMMAND_LINE_PARAMETERS@@";
 	private static final String QUOTE_REGEX = "\"";
 	private static final String QUOTE_REPLACEMENT_FOR_BASH_SCRIPT = "\\\"";
+	private static final String LOCAL_EXECUTOR_TYPE = "local";
+	private static final String LOCAL_EXECUTOR_NAME = "dci-bridge host(64bit)";
 	private static final NodeLogger LOGGER = NodeLogger.getLogger(GuseKnimeWorkflowExporter.class);
 	private static final char ZIP_ENTRY_SEPARATOR = '/';
 
@@ -222,6 +225,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		for (final Job job : workflow.getJobs()) {
 			fixJobName(job);
 			fixDuplicateJobName(nameOccurrenceMap, job);
+			fixCollectorGeneratorJob(job);
 		}
 	}
 
@@ -245,6 +249,18 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			final String oldName = job.getName();
 			job.setName(oldName + nameOccurrences);
 			nameOccurrenceMap.put(oldName, nameOccurrences + 1);
+		}
+	}
+
+	private void fixCollectorGeneratorJob(final Job job) {
+		// set to use the local executor
+		switch (job.getJobType()) {
+			case Generator :
+			case Collector :
+				job.setRemoteApplication(generateFileListLocalExecutor());
+				break;
+			default :
+				// nop
 		}
 	}
 
@@ -654,6 +670,24 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		executeElement.setAttribute("label", "null");
 		executeElement.setAttribute("key", StringEscapeUtils.escapeXml(key));
 		executeElement.setAttribute("value", StringEscapeUtils.escapeXml(value));
+	}
+
+	// Collector/Generator jobs use a local executor
+	private Application generateFileListLocalExecutor() {
+		// name="dci-bridge host(64bit)" type="local"
+		final Resource.Builder resourceBuilder = new Resource.Builder();
+		resourceBuilder.withName(LOCAL_EXECUTOR_NAME).withType(LOCAL_EXECUTOR_TYPE);
+		final Resource resource = resourceBuilder.newInstance();
+
+		final Application.Builder applicationBuilder = new Application.Builder();
+		applicationBuilder.withDescription("Filelist local executor handler");
+		applicationBuilder.withName("FileListHandler");
+		applicationBuilder.withOwningResource(resource);
+		applicationBuilder.withPath("/usr/bin/dummy");
+		applicationBuilder.withVersion("1.0-SNAPSHOT");
+
+		return applicationBuilder.newInstance();
+
 	}
 
 	/*

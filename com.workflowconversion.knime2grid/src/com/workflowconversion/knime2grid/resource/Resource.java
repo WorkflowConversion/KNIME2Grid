@@ -18,9 +18,10 @@ import com.workflowconversion.knime2grid.utils.KeyUtils;
  * 
  * {@link Resource} classes contain a list of {@link Application} and a list of queues.
  * 
- * It is assumed that instances of these classes will exist only within a single thread, meaning: the builder pattern is an overkill. However, making classes
- * threadsafe is always a good practice, plus, using the builder pattern it is guaranteed that all instances of this class will be valid (i.e., they won't
- * contain non-allowed values for members, such as a {@code null} name or id.
+ * It is assumed that instances of these classes will exist only within a single thread, meaning: the builder pattern is
+ * an overkill. However, making classes threadsafe is always a good practice, plus, using the builder pattern it is
+ * guaranteed that all instances of this class will be valid (i.e., they won't contain non-allowed values for members,
+ * such as a {@code null} name or id.
  * 
  * @author delagarza
  *
@@ -36,7 +37,7 @@ public class Resource implements Serializable {
 	private final Map<String, Application> applications;
 	private final Map<String, Queue> queues;
 
-	private Resource(final String type, final String name, final Collection<Application> initialApplications, final Collection<Queue> queues) {
+	private Resource(final String type, final String name, final Collection<Queue> queues) {
 		Validate.isTrue(StringUtils.isNotBlank(type), "type cannot be null, empty or contain only whitespace characters.");
 		Validate.isTrue(StringUtils.isNotBlank(name), "name cannot be null, empty or contain only whitespace characters.");
 		this.type = type;
@@ -46,7 +47,6 @@ public class Resource implements Serializable {
 		this.queues = new TreeMap<String, Queue>();
 
 		// copy the contents of the collection!
-		fillInitialApplications(initialApplications);
 		fillQueues(queues);
 	}
 
@@ -54,16 +54,6 @@ public class Resource implements Serializable {
 		if (queues != null) {
 			for (final Queue queue : queues) {
 				this.queues.put(KeyUtils.generate(queue), queue);
-			}
-		}
-	}
-
-	private void fillInitialApplications(final Collection<Application> initialApplications) {
-		if (initialApplications != null) {
-			for (final Application application : initialApplications) {
-				if (applications.put(KeyUtils.generate(application), application) != null) {
-					throw new DuplicateApplicationException(application);
-				}
 			}
 		}
 	}
@@ -114,7 +104,8 @@ public class Resource implements Serializable {
 	 *            the application version.
 	 * @param path
 	 *            the application path.
-	 * @return the application with the given fields, or {@code null} if the application is not contained in this resource.
+	 * @return the application with the given fields, or {@code null} if the application is not contained in this
+	 *         resource.
 	 */
 	public Application getApplication(final String name, final String version, final String path) {
 		return applications.get(KeyUtils.generateApplicationKey(name, version, path));
@@ -250,7 +241,6 @@ public class Resource implements Serializable {
 	public static class Builder {
 		private String type;
 		private String name;
-		private Collection<Application> applications;
 		private Collection<Queue> queues;
 
 		/**
@@ -288,16 +278,6 @@ public class Resource implements Serializable {
 		}
 
 		/**
-		 * @param applications
-		 *            the initial applications of the resource.
-		 * @return {@code this} builder.
-		 */
-		public Builder withApplications(final Collection<Application> applications) {
-			this.applications = applications;
-			return this;
-		}
-
-		/**
 		 * @param queues
 		 *            the resource queues.
 		 * @return {@code this} builder.
@@ -311,7 +291,7 @@ public class Resource implements Serializable {
 		 * @return a new instance of {@link Resource}.
 		 */
 		public Resource newInstance() {
-			return new Resource(type, name, applications, queues);
+			return new Resource(type, name, queues);
 		}
 	}
 }
