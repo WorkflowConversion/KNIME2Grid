@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -133,7 +134,7 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 			input.setSourceId(sourceNodeId);
 			input.setOriginalPortNr(destPortNr);
 			input.setName(destPort.getName() + getExtensionForPort(sourceNode, connectionContainer.getSourcePort()));
-			input.setMultiFile(destPort.isMultiFile());
+			// input.setMultiFile(destPort.isMultiFile());
 			job.addInput(input);
 
 			processedPortNames.add(destPort.getName());
@@ -145,7 +146,7 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 				final Port sourcePort = nodeConfiguration.getOutputPorts().get(ConverterUtils.convertFromKnimePort(sourcePortNr));
 				final Output newOutput = new Output();
 				final Node sourceNode = ((NativeNodeContainer) workflowManager.getNodeContainer(connectionContainer.getSource())).getNode();
-				newOutput.setMultiFile(sourcePort.isMultiFile());
+				// newOutput.setMultiFile(sourcePort.isMultiFile());
 				newOutput.setName(sourcePort.getName() + getExtensionForPort(sourceNode, connectionContainer.getSourcePort()));
 				newOutput.setOriginalPortNr(sourcePortNr);
 				job.addOutput(newOutput);
@@ -254,19 +255,27 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 			final Parameter<?> associatedParameter = nodeConfiguration.getParameter(port.getName());
 			final String parameterName = port.getName();
 			if (!processedPorts.contains(parameterName)) {
-				if (associatedParameter instanceof FileParameter && !port.isMultiFile()) {
-					final String filename = ((FileParameter) associatedParameter).getValue();
-					if (StringUtils.isNotBlank(filename)) {
-						final String extension = FilenameUtils.getExtension(filename);
-						((FileParameter) associatedParameter).setValue(ConverterUtils.generateFileNameForExport(parameterName, extension));
+				final List<String> fileNames = extractFileNames(port, nodeConfiguration);
+				if (fileNames.size() == 1) {
+					final String fileName = fileNames.get(0);
+					if (StringUtils.isNotBlank(fileName)) {
+						final String extension = FilenameUtils.getExtension(fileName);
+						final String fixedFileName = ConverterUtils.generateFileNameForExport(parameterName, extension);
+						// single file from a non multifile port or from a multifile port!
+						if (associatedParameter instanceof FileParameter) {
+							((FileParameter) associatedParameter).setValue(fixedFileName);
+						} else {
+							((FileListParameter) associatedParameter).setValue(Arrays.asList(fixedFileName));
+						}
 						processedPorts.add(parameterName);
 					}
-				} else if (associatedParameter instanceof FileListParameter && port.isMultiFile()) {
+				} else if (fileNames.size() > 1) {
 					if (associatedParameter.getValue() != null) {
+						// multifile
 						final List<String> fixedFilenames = new LinkedList<String>();
 						int fileNumber = 0;
-						for (final String filename : ((FileListParameter) associatedParameter).getStrings()) {
-							final String extension = FilenameUtils.getExtension(filename);
+						for (final String fileName : fileNames) {
+							final String extension = FilenameUtils.getExtension(fileName);
 							fixedFilenames.add(ConverterUtils.generateFileNameForExport(parameterName, extension, fileNumber));
 							fileNumber++;
 						}
@@ -274,10 +283,28 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 						processedPorts.add(parameterName);
 					}
 				} else {
+					// 0 inputs?
 					throw new RuntimeException("Invalid association between parameters and input files. This is probably a bug, please report it.");
 				}
 			}
 		}
+	}
+
+	// some multifile ports have only one file associated, in this case, it's not needed to treat ports as multifile
+	private List<String> extractFileNames(final Port port, final INodeConfiguration nodeConfiguration) {
+		final String parameterName = port.getName();
+		final Parameter<?> associatedParameter = nodeConfiguration.getParameter(parameterName);
+		final List<String> fileNames = new ArrayList<>();
+		if ((associatedParameter instanceof FileParameter && !port.isMultiFile())) {
+			// single file
+			fileNames.add(((FileParameter) associatedParameter).getValue());
+		} else if (associatedParameter instanceof FileListParameter && port.isMultiFile()) {
+			// potential multifile
+			fileNames.addAll(((FileListParameter) associatedParameter).getStrings());
+		} else {
+			throw new ApplicationException("Invalid association between parameters and input files. This is probably a bug and should be reported");
+		}
+		return fileNames;
 	}
 
 	private void fixIncomingPortsFromSourcePorts(final WorkflowManager workflowManager, final NativeNodeContainer nativeNodeContainer,

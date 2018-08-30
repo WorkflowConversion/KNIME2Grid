@@ -60,8 +60,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.genericworkflownodes.knime.commandline.CommandLineElement;
-import com.genericworkflownodes.knime.parameter.FileListParameter;
-import com.genericworkflownodes.knime.parameter.IFileParameter;
 import com.workflowconversion.knime2grid.KnimeWorkflowExporterActivator;
 import com.workflowconversion.knime2grid.exception.ApplicationException;
 import com.workflowconversion.knime2grid.export.workflow.KnimeWorkflowExporter;
@@ -394,21 +392,17 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	private void writeInput(final ZipOutputStream zipOutputStream, final Input input) throws IOException {
 		if (input.isMultiFile()) {
 			zipOutputStream.write(getFileListAsArchiveBytes(input));
-
 		} else {
 			zipOutputStream.write(Files.readAllBytes(input.getAssociatedFiles().get(0).toPath()));
 		}
 	}
 
 	private byte[] getFileListAsArchiveBytes(final Input input) throws IOException {
-		final FileListParameter data = (FileListParameter) input.getAssociatedFileParameter();
-
 		final ByteArrayOutputStream rawOutputStream = new ByteArrayOutputStream(4096);
 		final GZIPOutputStream gzOutputStream = new GZIPOutputStream(new BufferedOutputStream(rawOutputStream));
 		final TarArchiveOutputStream tarOutputStream = new TarArchiveOutputStream(gzOutputStream);
 
-		for (final String inputFileName : data.getValue()) {
-			final File inputFile = new File(inputFileName);
+		for (final File inputFile : input.getAssociatedFiles()) {
 			tarOutputStream.putArchiveEntry(new TarArchiveEntry(inputFile, inputFile.getName()));
 			final FileInputStream fileStream = new FileInputStream(inputFile);
 			final BufferedInputStream bufferedStream = new BufferedInputStream(fileStream);
@@ -448,7 +442,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 
 		final Element workflowElement = document.createElement("workflow");
 		document.appendChild(workflowElement);
-		final String workflowName = workflow.getName() + "_KNIME_export";
+		final String workflowName = workflow.getName();
 		workflowElement.setAttribute("download", "all");
 		workflowElement.setAttribute("export", "proj");
 		workflowElement.setAttribute("mainabst", "");
@@ -517,6 +511,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 			addExecutionProperty(jobElement, "type", "Sequence");
 			// parameters are given direclty in the script
 			addExecutionProperty(jobElement, "params", "");
+			addExecutionProperty(jobElement, "binary", "knime2grid.script");
 			addExecutionProperty(jobElement, "jobistype", "binary");
 			addMiddlewareSpecificProperties(jobElement, job);
 
@@ -532,14 +527,8 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 				// FIXME: x, y for ports? These values have to be scaled, but ain't nobody got time for that
 				inputElement.setAttribute("x", Integer.toString(input.getX()));
 				inputElement.setAttribute("y", Integer.toString(input.getY()));
+				addConcreteInputPortProperties(inputElement, input);
 
-				addConcretePortProperty(inputElement, "eparam", input.getConnectionType() == ConnectionType.Collector ? "1" : "0");
-				final String waiting = input.getConnectionType() == ConnectionType.Collector ? "all" : "one";
-				addConcretePortProperty(inputElement, "waitingtmp", waiting);
-				addConcretePortProperty(inputElement, "waiting", waiting);
-				addConcretePortProperty(inputElement, "intname", input.getName());
-				addConcretePortProperty(inputElement, "dpid", "0");
-				addConcretePortProperty(inputElement, "pequaltype", "0");
 			}
 			// outputs
 			for (final Output output : job.getOutputs()) {
@@ -550,12 +539,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 				outputElement.setAttribute("text", "Description of Port");
 				outputElement.setAttribute("x", Integer.toString(output.getX()));
 				outputElement.setAttribute("y", Integer.toString(output.getY()));
-
-				final String mainCount = output.getConnectionType() == ConnectionType.Generator ? "2" : "1";
-				addConcretePortProperty(outputElement, "maincount0", mainCount);
-				addConcretePortProperty(outputElement, "intname", fixPortName(output));
-				addConcretePortProperty(outputElement, "type0", "permanent");
-				addConcretePortProperty(outputElement, "maincount", mainCount);
+				addConcreteOutputPortProperties(outputElement, output);
 			}
 		}
 
@@ -572,6 +556,38 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		final StringWriter writer = new StringWriter();
 		transformer.transform(new DOMSource(document), new StreamResult(writer));
 		builder.append(writer.toString());
+	}
+
+	private void addConcreteInputPortProperties(final Element inputElement, final Input input) {
+		switch (input.getConnectionType()) {
+			case UserProvided :
+				// anything goes, key is required, value is ignored
+				addConcretePortProperty(inputElement, "file", "knime2grid.file");
+				addConcretePortProperty(inputElement, "eparam", "0");
+				addConcretePortProperty(inputElement, "pequaltype", "0");
+				addConcretePortProperty(inputElement, "intname", input.getName());
+				addConcretePortProperty(inputElement, "dpid", Integer.toString(input.getPortNr()));
+				break;
+			case Collector :
+				addConcretePortProperty(inputElement, "waitingtmp", "all");
+				addConcretePortProperty(inputElement, "waiting", "all");
+				addConcretePortProperty(inputElement, "eparam", "1");
+				addConcretePortProperty(inputElement, "pequaltype", "0");
+				addConcretePortProperty(inputElement, "intname", input.getName());
+				addConcretePortProperty(inputElement, "dpid", Integer.toString(input.getPortNr()));
+				break;
+			default :
+				// no extra properties required
+				break;
+		}
+	}
+
+	private void addConcreteOutputPortProperties(final Element outputElement, final Output output) {
+		final String mainCount = output.getConnectionType() == ConnectionType.Generator ? "2" : "1";
+		addConcretePortProperty(outputElement, "maincount0", mainCount);
+		addConcretePortProperty(outputElement, "maincount", mainCount);
+		addConcretePortProperty(outputElement, "intname", fixPortName(output));
+		addConcretePortProperty(outputElement, "type0", "permanent");
 	}
 
 	private String getPreJob(final Workflow workflow, final Input input) {
@@ -591,10 +607,11 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	// gUSE requires port names to match the associated filename (including extension)
 	// our zip_loop_start/end scripts depend on the use of '_'
 	private String fixPortName(final Port port) {
-		final IFileParameter associatedFile = port.getAssociatedFileParameter();
+		// for a possible associatedFile instanceof IFileListParameter
+		// final IFileParameter associatedFile = port.getAssociatedFileParameter();
 		String fixedPortName = port.getName();
 		// null is handled safely by instanceof
-		if (associatedFile instanceof FileListParameter) {
+		if (port.isMultiFile()) {
 			fixedPortName += ".tar.gz";
 		}
 		// if (associatedFile != null) {

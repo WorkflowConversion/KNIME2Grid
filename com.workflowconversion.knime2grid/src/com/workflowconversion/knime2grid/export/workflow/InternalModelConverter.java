@@ -44,7 +44,6 @@ import org.knime.workbench.editor2.editparts.NodeInPortEditPart;
 import org.knime.workbench.editor2.editparts.NodeOutPortEditPart;
 import org.knime.workbench.editor2.editparts.WorkflowRootEditPart;
 
-import com.genericworkflownodes.knime.parameter.FileListParameter;
 import com.genericworkflownodes.knime.parameter.IFileParameter;
 import com.workflowconversion.knime2grid.exception.ApplicationException;
 import com.workflowconversion.knime2grid.export.io.SourceConverter;
@@ -58,8 +57,7 @@ import com.workflowconversion.knime2grid.model.Output.Destination;
 import com.workflowconversion.knime2grid.model.Workflow;
 
 /**
- * This class takes a workflow from the KNIME UI and transforms it to the
- * internal format.
+ * This class takes a workflow from the KNIME UI and transforms it to the internal format.
  * 
  * @author Luis de la Garza
  */
@@ -106,15 +104,12 @@ public class InternalModelConverter {
 		return workflow;
 	}
 
-	private void convertNodes(final WorkflowManager workflowManager, final Workflow workflow)
-			throws IOException, Exception {
+	private void convertNodes(final WorkflowManager workflowManager, final Workflow workflow) throws IOException, Exception {
 		for (final NodeContainer nc : workflowManager.getNodeContainers()) {
 			if (nc instanceof NativeNodeContainer) {
 				final NativeNodeContainer nativeNodeContainer = (NativeNodeContainer) nc;
 				final File workingDirectory = Files
-						.createTempDirectory("knime2guse_"
-								+ ConverterUtils.fixNodeIdForFileSystem(nativeNodeContainer.getID().toString()))
-						.toFile();
+						.createTempDirectory("knime2guse_" + ConverterUtils.fixNodeIdForFileSystem(nativeNodeContainer.getID().toString())).toFile();
 				if (isProcessingNode(nativeNodeContainer)) {
 					// go through all registered handlers
 					Job convertedJob = null;
@@ -141,8 +136,7 @@ public class InternalModelConverter {
 	private void convertEdges(final WorkflowManager workflowManager, final Workflow workflow) {
 		for (final ConnectionContainer connectionContainer : workflowManager.getConnectionContainers()) {
 			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("Processing connection: " + connectionContainer.getSource() + "->"
-						+ connectionContainer.getDest());
+				LOGGER.debug("Processing connection: " + connectionContainer.getSource() + "->" + connectionContainer.getDest());
 			}
 			final Job sourceJob = workflow.getJob(connectionContainer.getSource());
 			final Job targetJob = workflow.getJob(connectionContainer.getDest());
@@ -150,7 +144,13 @@ public class InternalModelConverter {
 			if (sourceJob != null && targetJob != null) {
 				final Input input = targetJob.getInputByOriginalPortNr(connectionContainer.getDestPort());
 				final Output output = sourceJob.getOutputByOriginalPortNr(connectionContainer.getSourcePort());
-				input.setConnectionType(ConnectionType.Channel);
+				// do not overwrite already set connection types (such as collector/generator)
+				if (input.getConnectionType() == ConnectionType.NotAssigned) {
+					input.setConnectionType(ConnectionType.Channel);
+				}
+				if (output.getConnectionType() == ConnectionType.NotAssigned) {
+					output.setConnectionType(ConnectionType.Channel);
+				}
 				input.setSourcePortNr(output.getPortNr());
 				input.setSourceId(connectionContainer.getSource());
 				output.addDestination(new Destination(targetJob, input.getPortNr()));
@@ -158,8 +158,7 @@ public class InternalModelConverter {
 		}
 	}
 
-	private void handleUnassignedInputs(final WorkflowManager workflowManager, final Workflow workflow)
-			throws Exception {
+	private void handleUnassignedInputs(final WorkflowManager workflowManager, final Workflow workflow) throws Exception {
 		for (final Job job : workflow.getJobs()) {
 			for (final Input input : job.getInputs()) {
 				if (input.getConnectionType() == ConnectionType.NotAssigned) {
@@ -173,11 +172,10 @@ public class InternalModelConverter {
 						}
 					}
 					if (inputData == null) {
-						throw new RuntimeException(
-								"The input could not be converted. This is probably a bug and should be reported!");
+						throw new RuntimeException("The input could not be converted. This is probably a bug and should be reported!");
 					}
-					// TODO: what a hack!
-					input.setMultiFile(inputData instanceof FileListParameter);
+					// TODO: remove? it seems that GenericKnimeNodeConverter converts multifile inputs as well
+					// input.setMultiFile(input.isMultiFile() || inputData instanceof FileListParameter);
 					input.setConnectionType(ConnectionType.UserProvided);
 					input.setAssociatedFileParameter(inputData);
 				}
@@ -187,8 +185,7 @@ public class InternalModelConverter {
 
 	@SuppressWarnings("unchecked")
 	private void setGraphicalElements(final Workflow workflow, final WorkflowEditor editor) {
-		final WorkflowRootEditPart workflowRootEditPart = (WorkflowRootEditPart) editor.getViewer().getRootEditPart()
-				.getChildren().get(0);
+		final WorkflowRootEditPart workflowRootEditPart = (WorkflowRootEditPart) editor.getViewer().getRootEditPart().getChildren().get(0);
 		final IFigure figure = workflowRootEditPart.getFigure();
 		final Rectangle bounds = figure.getBounds();
 		workflow.setHeight(bounds.height);

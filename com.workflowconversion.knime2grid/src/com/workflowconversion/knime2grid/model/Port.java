@@ -26,7 +26,7 @@ public abstract class Port implements GraphicElement {
 	// the port number in the job
 	private int portNr;
 	// whether this is a multi-input/output port
-	private boolean multiFile = false;
+	private final boolean multiFile = false;
 	// the connection type of this port
 	private ConnectionType connectionType = ConnectionType.NotAssigned;
 
@@ -168,15 +168,6 @@ public abstract class Port implements GraphicElement {
 	 * @return the multiFile
 	 */
 	public boolean isMultiFile() {
-		return multiFile;
+		return associatedFiles.size() > 1;
 	}
-
-	/**
-	 * @param multiFile
-	 *            the multiFile to set
-	 */
-	public void setMultiFile(final boolean multiFile) {
-		this.multiFile = multiFile;
-	}
-
 }

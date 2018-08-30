@@ -167,7 +167,8 @@ public class ConverterUtils {
 	}
 
 	/**
-	 * KNIME nodes contain an extra port for flow variables. This method converts a knime port number to the internal format port number.
+	 * KNIME nodes contain an extra port for flow variables. This method converts a knime port number to the internal
+	 * format port number.
 	 * 
 	 * @param knimePortNr
 	 *            The knime port number.
@@ -189,7 +190,8 @@ public class ConverterUtils {
 	}
 
 	/**
-	 * Given a port name and an extension, generates the following relative location {@code [portName]/[portName].[extension]}.
+	 * Given a port name and an extension, generates the following relative location
+	 * {@code [portName]/[portName].[extension]}.
 	 * 
 	 * @param portName
 	 *            The name of the port needing the file.
@@ -202,8 +204,9 @@ public class ConverterUtils {
 	}
 
 	/**
-	 * Given a port name, an index and an extension, generates the following relative location: {@code [portName]/[portName]_[index].[extension]} This simple
-	 * method helps avoiding clashes in lists of files that are used as inputs/outputs for jobs.
+	 * Given a port name, an index and an extension, generates the following relative location:
+	 * {@code [portName]/[portName]_[index].[extension]} This simple method helps avoiding clashes in lists of files
+	 * that are used as inputs/outputs for jobs.
 	 * 
 	 * @param portName
 	 *            The name of the port needing the file.
@@ -214,7 +217,7 @@ public class ConverterUtils {
 	 * @return The {@code [index]_[portName].[extension]} relative location.
 	 */
 	public static String generateFileNameForExport(final String portName, final String extension, final int index) {
-		return index + '_' + portName + '.' + extension;
+		return Integer.toString(index) + '_' + portName + '.' + extension;
 	}
 
 	/**

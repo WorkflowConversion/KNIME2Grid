@@ -63,12 +63,11 @@ import com.workflowconversion.knime2grid.model.Output;
  */
 public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 
-	private static final String FLOW_VARIABLE_PREFIX_RIGHT = "\",\"";
-	// -workflow.variable="<name>","<value>","<type>" (type is one of int,
-	// double, String)
+	private static final String FLOW_VARIABLE_PREFIX_RIGHT = ",";
+	// -workflow.variable=<name>,<value>,<type> (type is one of int, double, String)
 	// sets flow variables when executing workflows in batch mode.
-	private static final String FLOW_VARIABLE_PREFIX_LEFT = "-workflow.variable=\"";
-	private static final String FLOW_VARIABLE_SUFFIX = "\",\"String\"";
+	private static final String FLOW_VARIABLE_PREFIX_LEFT = "-workflow.variable=";
+	private static final String FLOW_VARIABLE_SUFFIX = ",String";
 
 	private final static NodeLogger LOGGER = NodeLogger.getLogger(DefaultKnimeNodeConverter.class);
 	private final static WorkflowManager WORKFLOW_MANAGER = WorkflowManager.ROOT.createAndAddProject("KNIME_WF_converter_tmp_wf", new WorkflowCreationHelper());
@@ -106,8 +105,7 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 		job.setJobType(JobType.KnimeInternal);
 		ConverterUtils.copyBasicInformation(job, nativeNodeContainer);
 
-		// create a temporary folder on which we will create all of the mini
-		// sub-wfs
+		// create a temporary folder on which we will create all of the mini sub-wfs
 		final Path sandboxDir = workingDirectory.toPath();
 
 		final File miniWorkflowDir = Files.createTempDirectory(sandboxDir, "miniwf").toFile();
@@ -123,14 +121,13 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 		int currentInput = 0, currentOutput = 0;
 
 		final Collection<CommandLineElement> commandLineElements = new LinkedList<CommandLineElement>();
-		// $ knime -noexit -consoleLog -application
-		// org.knime.product.KNIME_BATCH_APPLICATION -nosplash
-		// -workflowFile="<workflow-path>"
-		commandLineElements.add(new CommandLineFixedString("-noexit"));
-		commandLineElements.add(new CommandLineFixedString("-consoleLog"));
+		// see https://www.knime.com/faq#q12
+		commandLineElements.add(new CommandLineFixedString("-nosplash"));
+		commandLineElements.add(new CommandLineFixedString("--launcher.suppressErrors"));
+		commandLineElements.add(new CommandLineFixedString("-nosave"));
+		commandLineElements.add(new CommandLineFixedString("-reset"));
 		commandLineElements.add(new CommandLineFixedString("-application"));
 		commandLineElements.add(new CommandLineParameter(new StringParameter("application", "org.knime.product.KNIME_BATCH_APPLICATION")));
-		commandLineElements.add(new CommandLineFixedString("-nosplash"));
 
 		for (final ConnectionContainer connectionContainer : workflowManager.getIncomingConnectionsFor(nativeNodeContainer.getID())) {
 			final NodeID sourceNodeId = connectionContainer.getSource();
@@ -155,9 +152,8 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 			job.addInput(input);
 			if (DataTable.class.isAssignableFrom(inPortObjectClass)) {
 				if (hasCsvReaderSource(workflowManager, sourceNodeId)) {
-					// since we know that the source of this input is a
-					// CSVReader, we can directly
-					// create a CSVReader node in the mini workflow
+					// since we know that the source of this input is a CSVReader, we can directly create a CSVReader
+					// node in the mini workflow
 					LOGGER.info("Creating CSVReader");
 					// copy the settings from the origin CSVReader
 					workflowManager.saveNodeSettings(sourceNodeId, nodeSettings);
@@ -169,10 +165,9 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 					inputSettings.add(new VariableSetting("filename", inputFileKey));
 				}
 			} else if (IURIPortObject.class.isAssignableFrom(inPortObjectClass)) {
-				// the number of elements in IURIPortObjects is dynamic, so we
-				// should
-				// flag this as multifile just to be sure
-				input.setMultiFile(true);
+				// the number of elements in IURIPortObjects is dynamic, so we should flag this as multifile just to be
+				// sure... not sure about this one, though
+				// input.setMultiFile(true);
 				LOGGER.info("Creating FileInput");
 				nodeFactory = new MimeFileImporterNodeFactory();
 				inputSettings.add(new VariableSetting("FILENAME", inputFileKey, "tmpfile.txt"));
@@ -238,7 +233,7 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 					outputSettings.add(new VariableSetting("FILENAME", outputFileKey, "tmpfile.txt"));
 					// the number of elements in IURIPortObjects is dynamic, so we should
 					// flag this as multifile just to be sure
-					output.setMultiFile(true);
+					// output.setMultiFile(true);
 					// TODO: do we need something like the following? outputSettings.add(new
 					// VariableSetting("FILE_EXTENSION", "extension_" + currentOutput));
 				} else {

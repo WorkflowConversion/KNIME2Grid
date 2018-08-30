@@ -1,6 +1,4 @@
-String script = "foo=\"@@key@@\"";
-String value = "\"bar\"";
-
-System.out.println(script.replace("@@key@@", value.replace("\"", "\\\"")));
-
-System.out.println(null instanceof java.lang.String);
+String portName = "foo";
+String extension = "bar";
+int index = 0;
+System.out.println(index + '_' + portName + '.' + extension);

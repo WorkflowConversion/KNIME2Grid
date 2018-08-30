@@ -43,7 +43,7 @@ public class ConvertWorkflowHandler extends AbstractHandler {
 	private static final int SIZING_WIZARD_HEIGHT = 700;
 
 	@Override
-	public Object execute(ExecutionEvent event) throws ExecutionException {
+	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		final IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		Validate.notNull(workbenchWindow, "workbenchWindow is null. This is probably a bug and should be reported.");
 
@@ -59,6 +59,7 @@ public class ConvertWorkflowHandler extends AbstractHandler {
 			workflow = extractWorkflowFromEditor(workflowEditor, KnimeWorkflowExporterProvider.getInstance().getNodeConverters(),
 					KnimeWorkflowExporterProvider.getInstance().getSourceConverters());
 		} catch (final Exception e) {
+			LOG.error(e);
 			final IStatus status = new Status(IStatus.ERROR, KnimeWorkflowExporterActivator.PLUGIN_ID, "Workflow is not valid for conversion.");
 			ErrorDialog.openError(parent, "KNIME - Workflow Conversion", "Could not convert workflow. Reason:\n" + e.getMessage(), status);
 			return null;

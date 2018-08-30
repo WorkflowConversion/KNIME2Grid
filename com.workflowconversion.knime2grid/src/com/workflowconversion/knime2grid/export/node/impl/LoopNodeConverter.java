@@ -34,8 +34,6 @@ public class LoopNodeConverter implements NodeContainerConverter {
 
 	@Override
 	public Job convert(final NativeNodeContainer nativeNodeContainer, final WorkflowManager workflowManager, final File workingDirectory) throws Exception {
-		// these kind of jobs are not executed, they are just a signal for workflow systems that a generator-collector
-		// pattern is going on, we still need a "dummy" job
 		final Job job = new Job();
 		ConverterUtils.copyBasicInformation(job, nativeNodeContainer);
 		boolean generator = false, collector = false;
