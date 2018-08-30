@@ -146,10 +146,9 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 			final Collection<VariableSetting> inputSettings = new LinkedList<VariableSetting>();
 			final String inputFileKey = "input" + currentInput;
 			final Input input = new Input();
-			input.setName(inputFileKey);
+			String extension = "";
 			input.setSourceId(sourceNodeId);
 			input.setOriginalPortNr(destPort);
-			job.addInput(input);
 			if (DataTable.class.isAssignableFrom(inPortObjectClass)) {
 				if (hasCsvReaderSource(workflowManager, sourceNodeId)) {
 					// since we know that the source of this input is a CSVReader, we can directly create a CSVReader
@@ -179,6 +178,8 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 				if (IURIPortObject.class.isAssignableFrom(sourcePort.getPortType().getPortObjectClass())) {
 					final IURIPortObject sourcePortObject = (IURIPortObject) sourcePort.getPortObject();
 					final String sourceExtension = sourcePortObject.getURIContents().get(0).getExtension();
+					// wow, what a hack!
+					extension = '.' + sourceExtension;
 					commandLineElements.add(buildStringParameterAsFlowVariable(extensionKey, sourceExtension));
 				} else {
 					throw new RuntimeException("The port types of the source and destination port do not match");
@@ -190,8 +191,11 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 				nodeFactory = new PortObjectReaderNodeFactory(portType);
 				inputSettings.add(new VariableSetting("filename", inputFileKey));
 			}
+			// an extension might have been added
+			input.setName(inputFileKey + extension);
+			job.addInput(input);
 			// add the command line element for this file
-			commandLineElements.add(buildFilePathAsFlowVariable(inputFileKey));
+			commandLineElements.add(buildFilePathAsFlowVariable(inputFileKey + extension));
 			final NodeID miniWorkflowDataNodeId = miniWorkflowManager.addNode(nodeFactory);
 
 			addFlowVariables(nodeSettings, inputSettings);
