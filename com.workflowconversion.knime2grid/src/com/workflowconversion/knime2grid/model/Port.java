@@ -25,8 +25,6 @@ public abstract class Port implements GraphicElement {
 	private int originalPortNr;
 	// the port number in the job
 	private int portNr;
-	// whether this is a multi-input/output port
-	private final boolean multiFile = false;
 	// the connection type of this port
 	private ConnectionType connectionType = ConnectionType.NotAssigned;
 

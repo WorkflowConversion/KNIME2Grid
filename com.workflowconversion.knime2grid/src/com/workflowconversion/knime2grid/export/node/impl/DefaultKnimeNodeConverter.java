@@ -169,9 +169,7 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 				// input.setMultiFile(true);
 				LOGGER.info("Creating FileInput");
 				nodeFactory = new MimeFileImporterNodeFactory();
-				inputSettings.add(new VariableSetting("FILENAME", inputFileKey, "tmpfile.txt"));
 				final String extensionKey = "extension" + currentInput;
-				inputSettings.add(new VariableSetting("FILE_EXTENSION", extensionKey));
 				final NodeContainer sourceNode = workflowManager.getNodeContainer(sourceNodeId);
 				final NodeOutPort sourcePort = sourceNode.getOutPort(connectionContainer.getSourcePort());
 				// make sure that the origin is indeed a IURIPortObject!
@@ -184,11 +182,15 @@ public class DefaultKnimeNodeConverter implements NodeContainerConverter {
 				} else {
 					throw new RuntimeException("The port types of the source and destination port do not match");
 				}
+				inputSettings.add(new VariableSetting("FILE_EXTENSION", extensionKey));
+				// [hacking intensifies]
+				inputSettings.add(new VariableSetting("FILENAME", inputFileKey + extension, "tmpfile.txt"));
 			} else {
 				// not sure what the hell should we do here...
 				// TODO: is it ok to assume that model writer is fine?
 				LOGGER.info("PortType " + inPortObjectClass.getName());
 				nodeFactory = new PortObjectReaderNodeFactory(portType);
+				// [hacking intensifies]
 				inputSettings.add(new VariableSetting("filename", inputFileKey));
 			}
 			// an extension might have been added

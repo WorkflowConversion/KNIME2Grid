@@ -10,8 +10,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -78,14 +80,17 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 
 		// input/output ports are also handled as parameters in GKN, so we need to keep track of
 		// the ports that we've processed
-		final Set<String> processedPortNames = new TreeSet<String>();
+		final Set<String> processedPortNames = new TreeSet<>();
+		// since we will name converted job inputs using extensions, we need a map to relate GKN port names to converted
+		// inputs
+		final Map<String, com.workflowconversion.knime2grid.model.Port> gknPortToConvertedPort = new HashMap<>();
 
 		// all inputs and outputs of GKNs are URIs, so this simplifies the conversion
 		// we need to know how to actually execute this job on a command line environment
 		// so we need to access the command generator... however, at this point, there
 		// is no guarantee that all jobs have been converted so we need to use the WorkflowManager to
 		// gather information about other nodes
-		createInputsAndOutputsFromKnimeWorkflow(nativeNodeContainer, workflowManager, nodeConfiguration, job, processedPortNames);
+		createInputsAndOutputsFromKnimeWorkflow(nativeNodeContainer, workflowManager, nodeConfiguration, job, processedPortNames, gknPortToConvertedPort);
 
 		// process all non-input/non-output parameters AND the CTD, if any.
 		// this must be AFTER inputs/outputs have been processed, because we are adding
@@ -98,7 +103,7 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 					throw new ApplicationException(
 							"This job already has a CTD file. Only one CTD file per job is allowed. This is probably a bug and should be reported.");
 				}
-				addCTDInputPort(workflowManager, (CommandLineCTDFile) element, job, nodeConfiguration, nativeNodeContainer);
+				addCTDInputPort(workflowManager, (CommandLineCTDFile) element, job, nodeConfiguration, nativeNodeContainer, gknPortToConvertedPort);
 				ctdFound = true;
 			} else if (element instanceof ParametrizedCommandLineElement && !processedPortNames.contains(element.getKey())) {
 				// we need to process only true parameters, not flags or option identifiers
@@ -124,18 +129,20 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 	}
 
 	private void createInputsAndOutputsFromKnimeWorkflow(final NativeNodeContainer nativeNodeContainer, final WorkflowManager workflowManager,
-			final INodeConfiguration nodeConfiguration, final Job job, final Set<String> processedPortNames) {
+			final INodeConfiguration nodeConfiguration, final Job job, final Set<String> processedPortNames,
+			final Map<String, com.workflowconversion.knime2grid.model.Port> gknPortToConvertedPort) {
 		for (final ConnectionContainer connectionContainer : workflowManager.getIncomingConnectionsFor(nativeNodeContainer.getID())) {
 			final NodeID sourceNodeId = connectionContainer.getSource();
 			final Node sourceNode = ((NativeNodeContainer) workflowManager.getNodeContainer(connectionContainer.getSource())).getNode();
 			final int destPortNr = connectionContainer.getDestPort();
 			final Port destPort = nodeConfiguration.getInputPorts().get(ConverterUtils.convertFromKnimePort(destPortNr));
-			final Input input = new Input();
-			input.setSourceId(sourceNodeId);
-			input.setOriginalPortNr(destPortNr);
-			input.setName(destPort.getName() + getExtensionForPort(sourceNode, connectionContainer.getSourcePort()));
+			final Input convertedInput = new Input();
+			convertedInput.setSourceId(sourceNodeId);
+			convertedInput.setOriginalPortNr(destPortNr);
+			convertedInput.setName(destPort.getName() + getExtensionForPort(sourceNode, connectionContainer.getSourcePort()));
+			gknPortToConvertedPort.put(destPort.getName(), convertedInput);
 			// input.setMultiFile(destPort.isMultiFile());
-			job.addInput(input);
+			job.addInput(convertedInput);
 
 			processedPortNames.add(destPort.getName());
 		}
@@ -144,12 +151,13 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 			if (job.getOutputByOriginalPortNr(sourcePortNr) == null) {
 				// first time we see the output, we need to add it
 				final Port sourcePort = nodeConfiguration.getOutputPorts().get(ConverterUtils.convertFromKnimePort(sourcePortNr));
-				final Output newOutput = new Output();
+				final Output convertedOutput = new Output();
 				final Node sourceNode = ((NativeNodeContainer) workflowManager.getNodeContainer(connectionContainer.getSource())).getNode();
 				// newOutput.setMultiFile(sourcePort.isMultiFile());
-				newOutput.setName(sourcePort.getName() + getExtensionForPort(sourceNode, connectionContainer.getSourcePort()));
-				newOutput.setOriginalPortNr(sourcePortNr);
-				job.addOutput(newOutput);
+				convertedOutput.setName(sourcePort.getName() + getExtensionForPort(sourceNode, connectionContainer.getSourcePort()));
+				convertedOutput.setOriginalPortNr(sourcePortNr);
+				gknPortToConvertedPort.put(sourcePort.getName(), convertedOutput);
+				job.addOutput(convertedOutput);
 				processedPortNames.add(sourcePort.getName());
 			}
 		}
@@ -158,7 +166,8 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 	// when executing GKN in KNIME, each GKN generates an "on the fly" CTD file and uses it to
 	// execute the associated binary, but what we need here is to add a new input containing a CTD
 	private void addCTDInputPort(final WorkflowManager workflowManager, final CommandLineCTDFile element, final Job job,
-			final INodeConfiguration nodeConfiguration, final NativeNodeContainer nativeNodeContainer) throws IOException, InvalidCTDFileException {
+			final INodeConfiguration nodeConfiguration, final NativeNodeContainer nativeNodeContainer,
+			final Map<String, com.workflowconversion.knime2grid.model.Port> gknPortToConvertedPort) throws IOException, InvalidCTDFileException {
 		final Input ctdInput = new Input();
 		ctdInput.setName(CommandLineCTDFile.CTD_FILE_KEY);
 		ctdInput.setConnectionType(ConnectionType.UserProvided);
@@ -171,8 +180,21 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 				dumpConfiguration(clonedNodeConfiguration).getCanonicalPath());
 		ctdInput.setAssociatedFileParameter(ctdFileParameter);
 		job.addInput(ctdInput);
-		// fix the command line element!
+		// fix the command line element
 		element.setValue(ctdFileParameter);
+		// fix converted Input/Outputs
+		transferToConvertedPorts(clonedNodeConfiguration, gknPortToConvertedPort);
+	}
+
+	private void transferToConvertedPorts(final INodeConfiguration clonedNodeConfiguration,
+			final Map<String, com.workflowconversion.knime2grid.model.Port> gknPortToConvertedPort) {
+		for (final Map.Entry<String, com.workflowconversion.knime2grid.model.Port> entry : gknPortToConvertedPort.entrySet()) {
+			final Parameter<?> parameter = clonedNodeConfiguration.getParameter(entry.getKey());
+			if (parameter == null || !(parameter instanceof IFileParameter)) {
+				throw new ApplicationException("Invalid contents of map relating GKN ports to converted inputs. This is a bug and should be reported.");
+			}
+			entry.getValue().setAssociatedFileParameter((IFileParameter) parameter);
+		}
 	}
 
 	private File dumpConfiguration(final INodeConfiguration nodeConfiguration) throws IOException {
@@ -270,21 +292,18 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 						processedPorts.add(parameterName);
 					}
 				} else if (fileNames.size() > 1) {
-					if (associatedParameter.getValue() != null) {
-						// multifile
-						final List<String> fixedFilenames = new LinkedList<String>();
-						int fileNumber = 0;
-						for (final String fileName : fileNames) {
-							final String extension = FilenameUtils.getExtension(fileName);
-							fixedFilenames.add(ConverterUtils.generateFileNameForExport(parameterName, extension, fileNumber));
-							fileNumber++;
-						}
-						((FileListParameter) associatedParameter).setValue(fixedFilenames);
-						processedPorts.add(parameterName);
+					final List<String> fixedFilenames = new LinkedList<String>();
+					int fileNumber = 0;
+					for (final String fileName : fileNames) {
+						final String extension = FilenameUtils.getExtension(fileName);
+						fixedFilenames.add(ConverterUtils.generateFileNameForExport(parameterName, extension, fileNumber));
+						fileNumber++;
 					}
+					((FileListParameter) associatedParameter).setValue(fixedFilenames);
+					processedPorts.add(parameterName);
 				} else {
-					// 0 inputs?
-					throw new RuntimeException("Invalid association between parameters and input files. This is probably a bug, please report it.");
+					// 0 inputs!
+					// TODO: what does this mean???
 				}
 			}
 		}

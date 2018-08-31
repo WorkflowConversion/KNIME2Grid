@@ -67,6 +67,7 @@ import com.workflowconversion.knime2grid.format.ExtensionFilter;
 import com.workflowconversion.knime2grid.model.ConnectionType;
 import com.workflowconversion.knime2grid.model.Input;
 import com.workflowconversion.knime2grid.model.Job;
+import com.workflowconversion.knime2grid.model.JobType;
 import com.workflowconversion.knime2grid.model.Output;
 import com.workflowconversion.knime2grid.model.Port;
 import com.workflowconversion.knime2grid.model.Workflow;
@@ -84,6 +85,8 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	private static final String INPUT_PORTS_WITH_FILELIST_SCRIPT_KEY = "@@INPUT_PORTS_WITH_FILELIST@@";
 	private static final String OUTPUT_PORTS_WITH_FILELIST_SCRIPT_KEY = "@@OUTPUT_PORTS_WITH_FILELIST@@";
 	private static final String COMMAND_LINE_PARAMETERS_SCRIPT_KEY = "@@COMMAND_LINE_PARAMETERS@@";
+	private static final String INPUT_FILENAME_TRANSLATION_SCRIPT_KEY = "@@INPUT_FILENAME_TRANSLATION@@";
+	private static final String FILENAME_TRANSLATION_VAR_PREFIX = "KNIME2GRID_VAR_";
 	private static final String QUOTE_REGEX = "\"";
 	private static final String QUOTE_REPLACEMENT_FOR_BASH_SCRIPT = "\\\"";
 	private static final String LOCAL_EXECUTOR_TYPE = "local";
@@ -251,7 +254,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	}
 
 	private void fixCollectorGeneratorJob(final Job job) {
-		// set to use the local executor
+		// "hardcode" to set to use the local executor
 		switch (job.getJobType()) {
 			case Generator :
 			case Collector :
@@ -311,24 +314,41 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 	}
 
 	private String generateGeneratorScript(final Job job) throws IOException {
-		return loadScript("zip_loop_start.sh", "@@PORT_NAME@@", job.getInputByPortNr(0).getName());
+		// TODO: this is hackish, we know (assume) that generator jobs have one input and one output
+		final Input input = job.getInputs().iterator().next();
+		final Output output = job.getOutputs().iterator().next();
+		return loadScript("zip_loop_start.sh", "@@INPUT_PORT_NAME@@", fixPortName(input), "@@OUTPUT_BASE_NAME@@", fixPortName(output));
 	}
 
 	private String generateCollectorScript(final Job job) throws IOException {
-		return loadScript("zip_loop_end.sh", "@@BASE_PORT_NAME@@", job.getInputByPortNr(0).getName());
+		// TODO: this is hackish, we know (assume) that collector jobs have one input and one output
+		final Input input = job.getInputs().iterator().next();
+		final Output output = job.getOutputs().iterator().next();
+		return loadScript("zip_loop_end.sh", "@@INPUT_BASE_NAME@@", fixPortName(input), "@@OUTPUT_PORT_NAME@@", fixPortName(output));
 	}
 
 	private String generateDefaultScript(final Job job) throws IOException {
 		final StringBuilder fileListInputs = new StringBuilder();
 		final StringBuilder fileListOutputs = new StringBuilder();
+		final StringBuilder fileNameTranslation = new StringBuilder();
+		// see comment on job_wrapper.sh
+		final StringBuilder majorHackett = new StringBuilder();
 
+		// not related to port number, this is just a hack for the wrapper script
+		int scriptPortIndex = 0;
 		for (final Input input : job.getInputs()) {
 			if (input.isMultiFile()) {
 				if (fileListInputs.length() > 0) {
 					// not the first element, we can prepend a space
 					fileListInputs.append(' ');
 				}
-				fileListInputs.append(input.getName());
+				fileListInputs.append(fixPortName(input));
+				fileNameTranslation.append(FILENAME_TRANSLATION_VAR_PREFIX).append(scriptPortIndex).append("=\"");
+				// only place outside method fixPortName where we use the "base name" of the port!
+				fileNameTranslation.append(input.getName());
+				// gUSE runs on Linux, it might be incorrect to use System.getProperty("line.separator")
+				fileNameTranslation.append("\"\n");
+				scriptPortIndex++;
 			}
 		}
 		for (final Output output : job.getOutputs()) {
@@ -336,7 +356,13 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 				if (fileListOutputs.length() > 0) {
 					fileListOutputs.append(' ');
 				}
-				fileListOutputs.append(output.getName());
+				fileListOutputs.append(fixPortName(output));
+			}
+			if (job.getJobType() == JobType.KnimeInternal) {
+				if (majorHackett.length() > 0) {
+					majorHackett.append(' ');
+				}
+				majorHackett.append(fixPortName(output));
 			}
 		}
 
@@ -344,7 +370,8 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 		// which is not 100% under the control of this class
 		return loadScript("job_wrapper.sh", EXECUTABLE_SCRIPT_KEY, job.getRemoteApplication().getPath(), INPUT_PORTS_WITH_FILELIST_SCRIPT_KEY,
 				fileListInputs.toString(), OUTPUT_PORTS_WITH_FILELIST_SCRIPT_KEY, fileListOutputs.toString(), COMMAND_LINE_PARAMETERS_SCRIPT_KEY,
-				generateCommandLine(job).replace(QUOTE_REGEX, QUOTE_REPLACEMENT_FOR_BASH_SCRIPT));
+				generateCommandLine(job).replace(QUOTE_REGEX, QUOTE_REPLACEMENT_FOR_BASH_SCRIPT), INPUT_FILENAME_TRANSLATION_SCRIPT_KEY,
+				fileNameTranslation.toString(), "@@MAJOR_HACKETT@@", majorHackett.toString());
 	}
 
 	// loads a script from file,
@@ -565,7 +592,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 				addConcretePortProperty(inputElement, "file", "knime2grid.file");
 				addConcretePortProperty(inputElement, "eparam", "0");
 				addConcretePortProperty(inputElement, "pequaltype", "0");
-				addConcretePortProperty(inputElement, "intname", input.getName());
+				addConcretePortProperty(inputElement, "intname", fixPortName(input));
 				addConcretePortProperty(inputElement, "dpid", Integer.toString(input.getPortNr()));
 				break;
 			case Collector :
@@ -573,7 +600,7 @@ public class GuseKnimeWorkflowExporter implements KnimeWorkflowExporter {
 				addConcretePortProperty(inputElement, "waiting", "all");
 				addConcretePortProperty(inputElement, "eparam", "1");
 				addConcretePortProperty(inputElement, "pequaltype", "0");
-				addConcretePortProperty(inputElement, "intname", input.getName());
+				addConcretePortProperty(inputElement, "intname", fixPortName(input));
 				addConcretePortProperty(inputElement, "dpid", Integer.toString(input.getPortNr()));
 				break;
 			default :

@@ -145,13 +145,13 @@ public class Job implements GraphicElement {
 		return input;
 	}
 
-	public Input getInputByPortNr(final int portNr) {
-		final Input input = inputsByPortNr.get(portNr);
-		if (input == null) {
-			throw new NullPointerException("Input with portNr " + portNr + " does not exist.");
-		}
-		return input;
-	}
+	// public Input getInputByPortNr(final int portNr) {
+	// final Input input = inputsByPortNr.get(portNr);
+	// if (input == null) {
+	// throw new NullPointerException("Input with portNr " + portNr + " does not exist.");
+	// }
+	// return input;
+	// }
 
 	public Input getInputByOriginalPortNr(final int originalPortNr) {
 		return inputsByOriginalPortNr.get(originalPortNr);
@@ -198,14 +198,6 @@ public class Job implements GraphicElement {
 
 	public Collection<Output> getOutputs() {
 		return outputsByPortNr.values();
-	}
-
-	public int getNrInputs() {
-		return inputsByName.size();
-	}
-
-	public int getNrOutputs() {
-		return outputsByName.size();
 	}
 
 	public Map<String, String> getParams() {
