@@ -107,7 +107,10 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 				ctdFound = true;
 			} else if (element instanceof ParametrizedCommandLineElement && !processedPortNames.contains(element.getKey())) {
 				// we need to process only true parameters, not flags or option identifiers
-				final Parameter<?> parameter = nodeConfiguration.getParameter(element.getKey());
+				Parameter<?> parameter = nodeConfiguration.getParameter(element.getKey());
+				if (parameter == null) {
+					parameter = resolveParameter(nodeConfiguration, element.getKey());
+				}
 				job.addParameter(element.getKey(), parameter.getStringRep());
 			} else if (element instanceof CommandLineFile) {
 				// TODO: this seems to be dead code... only elements in the command line are the CTD and the flag...
@@ -126,6 +129,19 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 		}
 
 		return job;
+	}
+
+	// TODO: kind of do this right, I guess... Might be related to CLI sections, not sure, though
+	private Parameter<?> resolveParameter(final INodeConfiguration nodeConfiguration, final String key) {
+		// go through all motherfucking parameters and get the most similar one, whatever
+		for (final String parameterKey : nodeConfiguration.getParameterKeys()) {
+			// [NodeName].1.[key]
+			if (parameterKey.endsWith(key)) {
+				return nodeConfiguration.getParameter(parameterKey);
+			}
+		}
+
+		throw new ApplicationException("Parameter not found.");
 	}
 
 	private void createInputsAndOutputsFromKnimeWorkflow(final NativeNodeContainer nativeNodeContainer, final WorkflowManager workflowManager,

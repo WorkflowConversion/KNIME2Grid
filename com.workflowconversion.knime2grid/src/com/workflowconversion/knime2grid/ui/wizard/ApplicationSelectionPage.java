@@ -70,7 +70,7 @@ public class ApplicationSelectionPage extends WizardPage {
 	 */
 	public ApplicationSelectionPage(final Workflow workflow) {
 		super("com.workflowconversion.knime2grid.ui.wizard.ApplicationSelectionPage", "Configure your jobs",
-				ImageRepository.getImageDescriptor(SharedImages.Node));
+				ImageRepository.getImageDescriptor(SharedImages.NewKnimeBig));
 		Validate.notNull(workflow, "workflow is required and cannot be null");
 
 		this.allLocalJobs = workflow.getJobs().toArray(new Job[]{});
