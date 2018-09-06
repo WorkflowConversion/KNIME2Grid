@@ -109,7 +109,8 @@ public class GenericKnimeNodeConverter implements NodeContainerConverter {
 				// we need to process only true parameters, not flags or option identifiers
 				Parameter<?> parameter = nodeConfiguration.getParameter(element.getKey());
 				if (parameter == null) {
-					parameter = resolveParameter(nodeConfiguration, element.getKey());
+					// probably in the form NodeName.1.[key]
+					parameter = resolveParameter(nodeConfiguration, '.' + element.getKey());
 				}
 				job.addParameter(element.getKey(), parameter.getStringRep());
 			} else if (element instanceof CommandLineFile) {
