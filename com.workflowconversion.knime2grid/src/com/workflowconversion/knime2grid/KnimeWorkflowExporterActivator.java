@@ -66,11 +66,10 @@ public class KnimeWorkflowExporterActivator extends AbstractUIPlugin {
 		sourceConverters.add(new CSVReaderConverter());
 		sourceConverters.add(new MimeFileImporterConverter());
 		sourceConverters.add(new TableReaderConverter());
-		sourceConverters.add(new PortObjectReaderConverter());
 		sourceConverters.add(new ListMimeFileImporterConverter());
+		sourceConverters.add(new PortObjectReaderConverter());
 
-		KnimeWorkflowExporterProvider.initInstance(Collections.unmodifiableCollection(knownExporters),
-				Collections.unmodifiableCollection(nodeConverters),
+		KnimeWorkflowExporterProvider.initInstance(Collections.unmodifiableCollection(knownExporters), Collections.unmodifiableCollection(nodeConverters),
 				Collections.unmodifiableCollection(sourceConverters));
 	}
 
