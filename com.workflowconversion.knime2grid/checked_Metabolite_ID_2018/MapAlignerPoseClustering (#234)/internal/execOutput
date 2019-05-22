@@ -1,0 +1,13 @@
+File '/Users/delagarza/.OpenMS/OpenMS.ini' is deprecated.
+Updating missing/wrong entries in '/Users/delagarza/.OpenMS/OpenMS.ini' with defaults!
+Picking a reference (by size) ... done
+Progress of 'Aligning input maps':
+
+  16.67 %               
+  33.33 %               
+  50.00 %               
+  66.67 %               
+  83.33 %               
+  100.00 %               
+-- done [took 5.35 s (CPU), 10.86 s (Wall)] -- 
+MapAlignerPoseClustering took 11.68 s (wall), 5.73 s (CPU), 0.15 s (system), 5.58 s (user).
